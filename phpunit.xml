@@ -8,8 +8,8 @@
         <testsuite name="Ticketing">
             <directory>tests/Ticketing</directory>
         </testsuite>
-        <testsuite name="Auth">
-            <directory>tests/Auth</directory>
+        <testsuite name="Security">
+            <directory>tests/Security</directory>
         </testsuite>
         <testsuite name="Shared">
             <directory>tests/Shared</directory>
