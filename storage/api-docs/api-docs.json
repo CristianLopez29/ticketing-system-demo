@@ -1,0 +1,1347 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Manage Applications API",
+        "description": "REST API documentation for the Manage Applications & Evaluators backend",
+        "contact": {
+            "email": "admin@example.com"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost",
+            "description": "Demo API Server"
+        }
+    ],
+    "paths": {
+        "/api/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login and obtain API token",
+                "operationId": "a3b306d14572d1f4bd6c064b3233e7b8",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "test@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "password"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Authenticated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "token": {
+                                            "type": "string",
+                                            "example": "2|abcdef..."
+                                        },
+                                        "user": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Test User"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "format": "email",
+                                                    "example": "test@example.com"
+                                                },
+                                                "role": {
+                                                    "type": "string",
+                                                    "example": "admin"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials"
+                    }
+                }
+            }
+        },
+        "/api/logout": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logout current session (revoke current token)",
+                "operationId": "fe8f3429cd6979b3b4517e186505f9f9",
+                "responses": {
+                    "200": {
+                        "description": "Logged out"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/refresh-token": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Refresh API token (rotate current token)",
+                "operationId": "41b109d150a67fd6df88cced4d491a6f",
+                "responses": {
+                    "200": {
+                        "description": "New token issued",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "token": {
+                                            "type": "string",
+                                            "example": "3|ghijkl..."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/users/{id}/tokens/revoke-all": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Revoke all tokens for a user (admin only)",
+                "operationId": "703b0fa53b2fbdf1fbdf3f52bcb23f9d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "All tokens revoked"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/candidates/{id}/analyze": {
+            "post": {
+                "tags": [
+                    "Candidates"
+                ],
+                "summary": "Queue AI analysis for candidate CV",
+                "operationId": "e42ec31e9bc4a1fb307c7da4c73697ee",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Analysis queued"
+                    },
+                    "404": {
+                        "description": "Candidate not found"
+                    }
+                }
+            }
+        },
+        "/api/candidates/{id}/cv": {
+            "get": {
+                "tags": [
+                    "Candidates"
+                ],
+                "summary": "Download candidate CV PDF",
+                "operationId": "2310fd084d0bf2cf306a6c268fb7d7ae",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PDF file stream"
+                    },
+                    "404": {
+                        "description": "Candidate or CV not found"
+                    }
+                }
+            }
+        },
+        "/api/candidates/{id}/evaluation": {
+            "get": {
+                "tags": [
+                    "Candidates"
+                ],
+                "summary": "Get latest AI evaluation for a candidate",
+                "operationId": "38473e996e8ae94821567131d1144049",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Evaluation found"
+                    },
+                    "202": {
+                        "description": "Evaluation pending"
+                    },
+                    "404": {
+                        "description": "Candidate not found"
+                    }
+                }
+            }
+        },
+        "/api/candidates/{id}/summary": {
+            "get": {
+                "tags": [
+                    "Candidates"
+                ],
+                "summary": "Get candidate summary",
+                "operationId": "33bf6d7b425e9b7b32bfe7e0427bacc6",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Candidate summary retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "example": "Juan Perez"
+                                        },
+                                        "email": {
+                                            "type": "string",
+                                            "example": "juan@example.com"
+                                        },
+                                        "years_of_experience": {
+                                            "type": "integer",
+                                            "example": 5
+                                        },
+                                        "cv_preview": {
+                                            "type": "string",
+                                            "example": "CV Content..."
+                                        },
+                                        "cv_pdf": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "cv_download_url": {
+                                            "type": "string",
+                                            "example": "http://localhost/api/candidates/1/cv",
+                                            "nullable": true
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "assignment": {
+                                            "properties": {
+                                                "evaluator_name": {
+                                                    "type": "string",
+                                                    "example": "Maria Gonzalez"
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "example": "Pending"
+                                                },
+                                                "assigned_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object",
+                                            "nullable": true
+                                        },
+                                        "validations": {
+                                            "properties": {
+                                                "cv_required": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "valid_email": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "minimum_experience": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Candidate not found"
+                    }
+                }
+            }
+        },
+        "/api/candidates": {
+            "get": {
+                "tags": [
+                    "Candidates"
+                ],
+                "summary": "List candidates with filters",
+                "operationId": "2e8d8d265bd99a35b1fdec90138b857a",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter by assignment status (unassigned, pending, in_progress, completed, rejected)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "experience_min",
+                        "in": "query",
+                        "description": "Minimum years of experience",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "specialty",
+                        "in": "query",
+                        "description": "Primary specialty (Backend, Frontend, Fullstack, DevOps, Mobile, QA, Data, Security)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of candidates",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Juan Perez"
+                                                    },
+                                                    "email": {
+                                                        "type": "string",
+                                                        "example": "juan@example.com"
+                                                    },
+                                                    "years_of_experience": {
+                                                        "type": "integer",
+                                                        "example": 5
+                                                    },
+                                                    "primary_specialty": {
+                                                        "type": "string",
+                                                        "example": "Backend"
+                                                    },
+                                                    "assignment_status": {
+                                                        "type": "string",
+                                                        "example": "unassigned"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Candidates"
+                ],
+                "summary": "Register a new candidacy",
+                "operationId": "a1abcac86a6766de411a379655f62c8c",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "years_of_experience",
+                                    "cv"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Juan Perez"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "juan@example.com"
+                                    },
+                                    "years_of_experience": {
+                                        "type": "integer",
+                                        "example": 5
+                                    },
+                                    "cv": {
+                                        "type": "string",
+                                        "example": "CV Content"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "years_of_experience"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Juan Perez"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "juan@example.com"
+                                    },
+                                    "years_of_experience": {
+                                        "type": "integer",
+                                        "example": 5
+                                    },
+                                    "cv": {
+                                        "type": "string",
+                                        "example": "CV Content",
+                                        "nullable": true
+                                    },
+                                    "cv_file": {
+                                        "description": "PDF CV file",
+                                        "type": "string",
+                                        "format": "binary",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Candidacy registered successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Candidacy registered successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "juan@example.com"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/candidates/search": {
+            "get": {
+                "tags": [
+                    "Candidates"
+                ],
+                "summary": "Search candidates by email and filters",
+                "operationId": "d815381651de6b2157b1494bbb924e36",
+                "parameters": [
+                    {
+                        "name": "email",
+                        "in": "query",
+                        "description": "Email contains (substring match)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "experience_min",
+                        "in": "query",
+                        "description": "Minimum years of experience",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "specialty",
+                        "in": "query",
+                        "description": "Primary specialty (Backend, Frontend, Fullstack, DevOps, Mobile, QA, Data, Security)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of candidates",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Juan Perez"
+                                                    },
+                                                    "email": {
+                                                        "type": "string",
+                                                        "example": "juan@example.com"
+                                                    },
+                                                    "years_of_experience": {
+                                                        "type": "integer",
+                                                        "example": 5
+                                                    },
+                                                    "primary_specialty": {
+                                                        "type": "string",
+                                                        "example": "Backend"
+                                                    },
+                                                    "assignment_status": {
+                                                        "type": "string",
+                                                        "example": "unassigned"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/evaluators/{evaluatorId}/assign-candidate": {
+            "post": {
+                "tags": [
+                    "Evaluators"
+                ],
+                "summary": "Assign a candidate to an evaluator",
+                "operationId": "92b20cb2aa3d548dca5ef3e48acd3e0e",
+                "parameters": [
+                    {
+                        "name": "evaluatorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "candidate_id"
+                                ],
+                                "properties": {
+                                    "candidate_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Candidate assigned successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Candidate assigned successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Evaluator or Candidate not found"
+                    },
+                    "409": {
+                        "description": "Candidate already assigned"
+                    }
+                }
+            }
+        },
+        "/api/evaluators/{evaluatorId}/assignments/{candidateId}/complete": {
+            "put": {
+                "tags": [
+                    "Evaluators"
+                ],
+                "summary": "Mark assignment as completed",
+                "operationId": "a95efa3134156f3d51fcd6fa6307ad3a",
+                "parameters": [
+                    {
+                        "name": "evaluatorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "candidateId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Assignment completed"
+                    },
+                    "404": {
+                        "description": "Assignment not found"
+                    }
+                }
+            }
+        },
+        "/api/evaluators/consolidated": {
+            "get": {
+                "tags": [
+                    "Evaluators"
+                ],
+                "summary": "Get consolidated list of evaluators and their candidates",
+                "operationId": "fc3fe8bdd46faca1140b1082c9f7bf2b",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by name or email",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "description": "Sort by field (name, email, created_at, average_experience, specialty, total_assigned_candidates, concatenated_candidate_emails)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "average_experience"
+                        }
+                    },
+                    {
+                        "name": "sort_direction",
+                        "in": "query",
+                        "description": "Sort direction (asc, desc)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "desc"
+                        }
+                    },
+                    {
+                        "name": "specialty",
+                        "in": "query",
+                        "description": "Filter by evaluator specialty (e.g., Backend, Frontend, Fullstack, DevOps, Mobile, QA, Data, Security)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "min_average_experience",
+                        "in": "query",
+                        "description": "Minimum average candidate experience (years)",
+                        "required": false,
+                        "schema": {
+                            "type": "number",
+                            "format": "float"
+                        }
+                    },
+                    {
+                        "name": "max_average_experience",
+                        "in": "query",
+                        "description": "Maximum average candidate experience (years)",
+                        "required": false,
+                        "schema": {
+                            "type": "number",
+                            "format": "float"
+                        }
+                    },
+                    {
+                        "name": "min_total_assigned",
+                        "in": "query",
+                        "description": "Minimum total assigned candidates",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "max_total_assigned",
+                        "in": "query",
+                        "description": "Maximum total assigned candidates",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "candidate_email_contains",
+                        "in": "query",
+                        "description": "Substring to match within concatenated candidate emails",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "created_from",
+                        "in": "query",
+                        "description": "Filter evaluators created at or after this datetime",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time",
+                            "example": "2025-11-01 00:00:00"
+                        }
+                    },
+                    {
+                        "name": "created_to",
+                        "in": "query",
+                        "description": "Filter evaluators created at or before this datetime",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time",
+                            "example": "2025-11-15 23:59:59"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Consolidated list retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Maria Gonzalez"
+                                                    },
+                                                    "email": {
+                                                        "type": "string",
+                                                        "example": "maria@example.com"
+                                                    },
+                                                    "specialty": {
+                                                        "type": "string",
+                                                        "example": "Backend"
+                                                    },
+                                                    "average_candidate_experience": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": 4.5
+                                                    },
+                                                    "total_assigned_candidates": {
+                                                        "type": "integer",
+                                                        "example": 3
+                                                    },
+                                                    "concatenated_candidate_emails": {
+                                                        "type": "string",
+                                                        "example": "alpha@example.com, bravo@example.com"
+                                                    },
+                                                    "candidates": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "properties": {
+                                                                "id": {
+                                                                    "type": "integer",
+                                                                    "example": 1
+                                                                },
+                                                                "name": {
+                                                                    "type": "string",
+                                                                    "example": "Juan Perez"
+                                                                },
+                                                                "email": {
+                                                                    "type": "string",
+                                                                    "example": "juan@example.com"
+                                                                },
+                                                                "years_of_experience": {
+                                                                    "type": "integer",
+                                                                    "example": 5
+                                                                },
+                                                                "assigned_at": {
+                                                                    "type": "string",
+                                                                    "format": "date-time",
+                                                                    "example": "2025-11-15 12:34:56"
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        }
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "example": 5
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "example": 15
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 75
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/evaluators/{evaluatorId}/candidates": {
+            "get": {
+                "tags": [
+                    "Evaluators"
+                ],
+                "summary": "Get candidates assigned to an evaluator",
+                "operationId": "3ac824bd175536593b1c83b926671ab0",
+                "parameters": [
+                    {
+                        "name": "evaluatorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of assigned candidates",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Juan Perez"
+                                                    },
+                                                    "email": {
+                                                        "type": "string",
+                                                        "example": "juan@example.com"
+                                                    },
+                                                    "years_of_experience": {
+                                                        "type": "integer",
+                                                        "example": 5
+                                                    },
+                                                    "cv": {
+                                                        "type": "string",
+                                                        "example": "CV Content"
+                                                    },
+                                                    "status": {
+                                                        "type": "string",
+                                                        "example": "Pending"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Evaluator not found"
+                    }
+                }
+            }
+        },
+        "/api/evaluators/{newEvaluatorId}/reassign-candidate/{candidateId}": {
+            "put": {
+                "tags": [
+                    "Evaluators"
+                ],
+                "summary": "Reassign candidate to a new evaluator",
+                "operationId": "e0cb0de02120c4f3007a264027af655e",
+                "parameters": [
+                    {
+                        "name": "newEvaluatorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "candidateId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Candidate reassigned to new evaluator"
+                    },
+                    "404": {
+                        "description": "Evaluator or Assignment not found"
+                    }
+                }
+            }
+        },
+        "/api/evaluators": {
+            "post": {
+                "tags": [
+                    "Evaluators"
+                ],
+                "summary": "Register a new evaluator",
+                "operationId": "8a9210f5336c8cb2bfb0508a3185fced",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "specialty"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Maria Gonzalez"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "maria@example.com"
+                                    },
+                                    "specialty": {
+                                        "type": "string",
+                                        "example": "Backend"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Evaluator registered successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Evaluator registered successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "maria@example.com"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/evaluators/{evaluatorId}/assignments/{candidateId}/reject": {
+            "put": {
+                "tags": [
+                    "Evaluators"
+                ],
+                "summary": "Reject an assignment",
+                "operationId": "6dfb527e1b0ce105761d67420b65d2d8",
+                "parameters": [
+                    {
+                        "name": "evaluatorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "candidateId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Assignment rejected"
+                    },
+                    "404": {
+                        "description": "Assignment not found"
+                    }
+                }
+            }
+        },
+        "/api/evaluators/report": {
+            "post": {
+                "tags": [
+                    "Evaluators"
+                ],
+                "summary": "Request an Excel report of evaluators",
+                "operationId": "d2f0712445d4a0f1a6b0da67477e17ae",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "admin@example.com"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "Report generation queued",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "La generación del reporte ha sido encolada. Recibirás un correo cuando esté listo."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/evaluators/{evaluatorId}/assignments/{candidateId}/start-progress": {
+            "put": {
+                "tags": [
+                    "Evaluators"
+                ],
+                "summary": "Move assignment to in_progress",
+                "operationId": "61f29f13e825227647a0c02c3779b3eb",
+                "parameters": [
+                    {
+                        "name": "evaluatorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "candidateId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Assignment moved to in_progress"
+                    },
+                    "404": {
+                        "description": "Assignment not found"
+                    }
+                }
+            }
+        },
+        "/api/evaluators/{evaluatorId}/assignments/{candidateId}": {
+            "delete": {
+                "tags": [
+                    "Evaluators"
+                ],
+                "summary": "Unassign a candidate from an evaluator",
+                "operationId": "021c03767345fcd2b8a3ba08411492e5",
+                "parameters": [
+                    {
+                        "name": "evaluatorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "candidateId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Candidate unassigned from evaluator"
+                    },
+                    "404": {
+                        "description": "Assignment not found"
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Auth",
+            "description": "Auth"
+        },
+        {
+            "name": "Candidates",
+            "description": "Candidates"
+        },
+        {
+            "name": "Evaluators",
+            "description": "Evaluators"
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "sanctum": {
+                "type": "apiKey",
+                "description": "Enter token in format (Bearer <token>)",
+                "name": "Authorization",
+                "in": "header"
+            }
+        }
+    },
+    "security": [
+        {
+            "sanctum": []
+        }
+    ]
+}
