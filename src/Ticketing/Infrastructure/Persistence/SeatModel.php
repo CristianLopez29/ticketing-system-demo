@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class SeatModel extends Model
 {
+    /** @use HasFactory<\Database\Factories\SeatModelFactory> */
     use HasFactory;
 
     protected $table = 'seats';

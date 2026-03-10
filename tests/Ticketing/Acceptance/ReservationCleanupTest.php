@@ -3,7 +3,7 @@
 namespace Tests\Ticketing\Acceptance;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Testing\PendingCommand;
@@ -14,7 +14,7 @@ use Tests\TestCase;
 
 class ReservationCleanupTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseMigrations;
 
     protected function setUp(): void
     {
@@ -65,7 +65,8 @@ class ReservationCleanupTest extends TestCase
         $pending
             ->expectsOutput('Found 1 expired reservations. Processing...')
             ->expectsOutput("Cleaned up reservation: {$reservationId}")
-            ->assertExitCode(0);
+            ->assertExitCode(0)
+            ->run();
 
         // 3. Verify
 
