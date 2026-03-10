@@ -41,15 +41,37 @@ class EloquentTicketRepository implements TicketRepository
         return $this->mapToSeat($record);
     }
 
-    private function mapToSeat($record): Seat
+    private function mapToSeat(mixed $record): Seat
     {
+        $record = (array) $record;
+        $reservedByUserIdValue = $record['reserved_by_user_id'] ?? null;
+        $reservedByUserId = is_numeric($reservedByUserIdValue) ? (int) $reservedByUserIdValue : null;
+
+        $idValue = $record['id'] ?? null;
+        $id = is_numeric($idValue) ? (int) $idValue : 0;
+
+        $eventIdValue = $record['event_id'] ?? null;
+        $eventId = is_numeric($eventIdValue) ? (int) $eventIdValue : 0;
+
+        $rowValue = $record['row'] ?? null;
+        $row = is_string($rowValue) ? $rowValue : '';
+
+        $numberValue = $record['number'] ?? null;
+        $number = is_numeric($numberValue) ? (int) $numberValue : 0;
+
+        $priceAmountValue = $record['price_amount'] ?? null;
+        $priceAmount = is_numeric($priceAmountValue) ? (int) $priceAmountValue : 0;
+
+        $priceCurrencyValue = $record['price_currency'] ?? null;
+        $priceCurrency = is_string($priceCurrencyValue) ? $priceCurrencyValue : 'EUR';
+
         return new Seat(
-            new SeatId($record->id),
-            $record->event_id,
-            $record->row,
-            $record->number,
-            new Money($record->price_amount, $record->price_currency),
-            $record->reserved_by_user_id
+            new SeatId($id),
+            $eventId,
+            $row,
+            $number,
+            new Money($priceAmount, $priceCurrency),
+            $reservedByUserId
         );
     }
 

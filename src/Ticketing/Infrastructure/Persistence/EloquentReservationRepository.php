@@ -42,15 +42,17 @@ class EloquentReservationRepository implements ReservationRepository
             return null;
         }
 
+        $data = (array) $record;
+
         return new Reservation(
-            $record->id,
-            $record->event_id,
-            new SeatId($record->seat_id),
-            $record->user_id,
-            ReservationStatus::from($record->status),
-            new Money($record->price_amount, $record->price_currency),
-            new DateTimeImmutable($record->expires_at),
-            new DateTimeImmutable($record->created_at)
+            (string) ($data['id'] ?? ''),
+            (int) ($data['event_id'] ?? 0),
+            new SeatId((int) ($data['seat_id'] ?? 0)),
+            (int) ($data['user_id'] ?? 0),
+            ReservationStatus::from((string) ($data['status'] ?? ReservationStatus::PENDING_PAYMENT->value)),
+            new Money((int) ($data['price_amount'] ?? 0), (string) ($data['price_currency'] ?? 'EUR')),
+            new DateTimeImmutable((string) ($data['expires_at'] ?? 'now')),
+            new DateTimeImmutable((string) ($data['created_at'] ?? 'now'))
         );
     }
 
@@ -62,15 +64,17 @@ class EloquentReservationRepository implements ReservationRepository
             return null;
         }
 
+        $data = (array) $record;
+
         return new Reservation(
-            $record->id,
-            $record->event_id,
-            new SeatId($record->seat_id),
-            $record->user_id,
-            ReservationStatus::from($record->status),
-            new Money($record->price_amount, $record->price_currency),
-            new DateTimeImmutable($record->expires_at),
-            new DateTimeImmutable($record->created_at)
+            (string) ($data['id'] ?? ''),
+            (int) ($data['event_id'] ?? 0),
+            new SeatId((int) ($data['seat_id'] ?? 0)),
+            (int) ($data['user_id'] ?? 0),
+            ReservationStatus::from((string) ($data['status'] ?? ReservationStatus::PENDING_PAYMENT->value)),
+            new Money((int) ($data['price_amount'] ?? 0), (string) ($data['price_currency'] ?? 'EUR')),
+            new DateTimeImmutable((string) ($data['expires_at'] ?? 'now')),
+            new DateTimeImmutable((string) ($data['created_at'] ?? 'now'))
         );
     }
 
@@ -86,15 +90,16 @@ class EloquentReservationRepository implements ReservationRepository
 
         $reservations = [];
         foreach ($records as $record) {
+            $data = (array) $record;
             $reservations[] = new Reservation(
-                $record->id,
-                $record->event_id,
-                new SeatId($record->seat_id),
-                $record->user_id,
-                ReservationStatus::from($record->status),
-                new Money($record->price_amount, $record->price_currency),
-                new DateTimeImmutable($record->expires_at),
-                new DateTimeImmutable($record->created_at)
+                (string) ($data['id'] ?? ''),
+                (int) ($data['event_id'] ?? 0),
+                new SeatId((int) ($data['seat_id'] ?? 0)),
+                (int) ($data['user_id'] ?? 0),
+                ReservationStatus::from((string) ($data['status'] ?? ReservationStatus::PENDING_PAYMENT->value)),
+                new Money((int) ($data['price_amount'] ?? 0), (string) ($data['price_currency'] ?? 'EUR')),
+                new DateTimeImmutable((string) ($data['expires_at'] ?? 'now')),
+                new DateTimeImmutable((string) ($data['created_at'] ?? 'now'))
             );
         }
 
