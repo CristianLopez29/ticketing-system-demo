@@ -1,14 +1,15 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing\Infrastructure\Persistence;
 
+use DateTimeImmutable;
+use Illuminate\Support\Facades\DB;
+use Src\Ticketing\Domain\Enums\ReservationStatus;
 use Src\Ticketing\Domain\Model\SeasonTicket;
 use Src\Ticketing\Domain\Repositories\SeasonTicketRepository;
 use Src\Ticketing\Domain\ValueObjects\Money;
-use Src\Ticketing\Domain\Enums\ReservationStatus;
-use Illuminate\Support\Facades\DB;
-use DateTimeImmutable;
 
 class EloquentSeasonTicketRepository implements SeasonTicketRepository
 {
@@ -34,9 +35,10 @@ class EloquentSeasonTicketRepository implements SeasonTicketRepository
     public function find(string $id): ?SeasonTicket
     {
         $record = DB::table('season_tickets')->find($id);
-        if (!$record) {
+        if (! $record) {
             return null;
         }
+
         return $this->mapToEntity($record);
     }
 
@@ -51,6 +53,7 @@ class EloquentSeasonTicketRepository implements SeasonTicketRepository
         foreach ($records as $record) {
             $tickets[] = $this->mapToEntity($record);
         }
+
         return $tickets;
     }
 
@@ -63,9 +66,10 @@ class EloquentSeasonTicketRepository implements SeasonTicketRepository
             ->where('status', '!=', ReservationStatus::CANCELLED->value)
             ->first();
 
-        if (!$record) {
+        if (! $record) {
             return null;
         }
+
         return $this->mapToEntity($record);
     }
 

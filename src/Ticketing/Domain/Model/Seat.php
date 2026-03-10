@@ -1,22 +1,27 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing\Domain\Model;
 
+use InvalidArgumentException;
 use Src\Shared\Domain\AggregateRoot;
+use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Domain\ValueObjects\SeatId;
-use Src\Ticketing\Domain\Events\TicketSold;
-use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
-use InvalidArgumentException;
 
 class Seat extends AggregateRoot
 {
     private SeatId $id;
+
     private int $eventId;
+
     private string $row;
+
     private int $number;
+
     private Money $price;
+
     private ?int $reservedByUserId;
 
     public function __construct(
@@ -80,7 +85,7 @@ class Seat extends AggregateRoot
 
     public function reserve(int $userId): void
     {
-        if (!$this->isAvailable()) {
+        if (! $this->isAvailable()) {
             throw new SeatAlreadySoldException("Seat {$this->row}-{$this->number} is already sold.");
         }
 

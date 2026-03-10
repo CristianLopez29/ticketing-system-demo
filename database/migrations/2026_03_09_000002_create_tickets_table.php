@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('payment_reference');
             $table->timestamp('issued_at');
             $table->timestamps();
-            
+
             $table->unique('seat_id'); // One ticket per seat
         });
     }

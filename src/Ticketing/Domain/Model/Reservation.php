@@ -1,14 +1,15 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing\Domain\Model;
 
-use Src\Shared\Domain\AggregateRoot;
-use Src\Ticketing\Domain\ValueObjects\SeatId;
-use Src\Ticketing\Domain\ValueObjects\Money;
-use Src\Ticketing\Domain\Enums\ReservationStatus;
 use DateTimeImmutable;
 use RuntimeException;
+use Src\Shared\Domain\AggregateRoot;
+use Src\Ticketing\Domain\Enums\ReservationStatus;
+use Src\Ticketing\Domain\ValueObjects\Money;
+use Src\Ticketing\Domain\ValueObjects\SeatId;
 
 class Reservation extends AggregateRoot
 {
@@ -37,8 +38,8 @@ class Reservation extends AggregateRoot
             $userId,
             ReservationStatus::PENDING_PAYMENT,
             $price,
-            (new DateTimeImmutable())->modify("+{$durationMinutes} minutes"),
-            new DateTimeImmutable()
+            (new DateTimeImmutable)->modify("+{$durationMinutes} minutes"),
+            new DateTimeImmutable
         );
     }
 
@@ -79,7 +80,7 @@ class Reservation extends AggregateRoot
 
     public function isExpired(): bool
     {
-        return new DateTimeImmutable() > $this->expiresAt;
+        return new DateTimeImmutable > $this->expiresAt;
     }
 
     /**
@@ -88,10 +89,10 @@ class Reservation extends AggregateRoot
     public function markAsPaid(): void
     {
         if ($this->status !== ReservationStatus::PENDING_PAYMENT) {
-            throw new RuntimeException("Cannot pay for a reservation that is not pending.");
+            throw new RuntimeException('Cannot pay for a reservation that is not pending.');
         }
         if ($this->isExpired()) {
-            throw new RuntimeException("Reservation has expired.");
+            throw new RuntimeException('Reservation has expired.');
         }
 
         $this->status = ReservationStatus::PAID;
@@ -103,7 +104,7 @@ class Reservation extends AggregateRoot
     public function cancel(): void
     {
         if ($this->status === ReservationStatus::PAID) {
-            throw new RuntimeException("Cannot cancel a paid reservation.");
+            throw new RuntimeException('Cannot cancel a paid reservation.');
         }
 
         $this->status = ReservationStatus::CANCELLED;
@@ -132,9 +133,9 @@ class Reservation extends AggregateRoot
         $bytes = random_bytes(16);
 
         // Set version to 4 (0100)
-        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+        $bytes[6] = chr((ord($bytes[6]) & 0x0F) | 0x40);
         // Set variant to RFC 4122 (10xx)
-        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+        $bytes[8] = chr((ord($bytes[8]) & 0x3F) | 0x80);
 
         return vsprintf('res_%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
     }

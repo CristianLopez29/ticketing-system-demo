@@ -2,9 +2,9 @@
 
 namespace Tests\Ticketing\Unit\Domain\ValueObjects;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Src\Ticketing\Domain\ValueObjects\SeatId;
-use InvalidArgumentException;
 
 class SeatIdTest extends TestCase
 {

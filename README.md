@@ -92,6 +92,15 @@ We achieve high coverage in the Domain layer and test the full purchase flow via
 ./vendor/bin/sail artisan test tests/Ticketing
 ```
 
+## 🔀 Contribution Workflow (Branches + PRs + Conventional Commits)
+- All changes MUST be implemented via feature branches and merged through Pull Requests (PRs). Direct pushes to `main` are forbidden.
+- Split work into independent functional blocks. Each block MUST have its own branch and its own PR, and MUST be reviewable, testable, and mergeable in isolation.
+- All commit messages MUST follow Conventional Commits in English using the format: `type(scope): short description`.
+- Allowed `type` values: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`.
+- PR titles MUST also follow Conventional Commits in English (same format as commits).
+- CI MUST run tests inside Docker (using `compose.yaml` / Laravel Sail).
+- This practice MUST be verified (automatically and/or manually) during code review before approving any merge.
+
 ### 2. Stress Testing (k6)
 We verify system resilience with **k6**. The scenario simulates 1,000 concurrent users fighting for 100 tickets.
 

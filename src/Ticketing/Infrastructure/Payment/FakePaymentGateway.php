@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing\Infrastructure\Payment;
@@ -16,9 +17,9 @@ class FakePaymentGateway implements PaymentGateway
 
         // Simulate random failure (1% chance)
         if (random_int(1, 100) === 1) {
-            throw new RuntimeException("Payment failed due to insufficient funds or bank error.");
+            throw new RuntimeException('Payment failed due to insufficient funds or bank error.');
         }
 
-        return 'txn_' . bin2hex(random_bytes(16));
+        return 'txn_'.bin2hex(random_bytes(16));
     }
 }

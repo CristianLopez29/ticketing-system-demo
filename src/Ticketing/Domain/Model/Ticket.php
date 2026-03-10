@@ -1,12 +1,13 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing\Domain\Model;
 
+use DateTimeImmutable;
 use Src\Shared\Domain\AggregateRoot;
 use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Domain\ValueObjects\SeatId;
-use DateTimeImmutable;
 
 class Ticket extends AggregateRoot
 {
@@ -34,7 +35,7 @@ class Ticket extends AggregateRoot
             $userId,
             $price,
             $paymentReference,
-            new DateTimeImmutable()
+            new DateTimeImmutable
         );
     }
 

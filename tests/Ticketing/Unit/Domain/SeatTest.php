@@ -2,12 +2,12 @@
 
 namespace Tests\Ticketing\Unit\Domain;
 
-use PHPUnit\Framework\TestCase;
-use Src\Ticketing\Domain\Model\Seat;
-use Src\Ticketing\Domain\ValueObjects\SeatId;
-use Src\Ticketing\Domain\ValueObjects\Money;
-use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
+use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
+use Src\Ticketing\Domain\Model\Seat;
+use Src\Ticketing\Domain\ValueObjects\Money;
+use Src\Ticketing\Domain\ValueObjects\SeatId;
 
 class SeatTest extends TestCase
 {
@@ -26,7 +26,7 @@ class SeatTest extends TestCase
     public function test_it_creates_valid_seat(): void
     {
         $seat = $this->createValidSeat();
-        
+
         $this->assertEquals(1, $seat->id()->value());
         $this->assertEquals(100, $seat->eventId());
         $this->assertEquals('A', $seat->row());
@@ -40,7 +40,7 @@ class SeatTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Seat row cannot be empty.');
-        
+
         new Seat(new SeatId(1), 100, '  ', 10, new Money(5000), null);
     }
 
@@ -48,16 +48,16 @@ class SeatTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Seat number must be a positive integer.');
-        
+
         new Seat(new SeatId(1), 100, 'A', 0, new Money(5000), null);
     }
 
     public function test_it_can_be_reserved(): void
     {
         $seat = $this->createValidSeat();
-        
+
         $seat->reserve(999);
-        
+
         $this->assertFalse($seat->isAvailable());
         $this->assertEquals(999, $seat->reservedByUserId());
     }
@@ -65,12 +65,12 @@ class SeatTest extends TestCase
     public function test_it_throws_exception_when_reserved_twice(): void
     {
         $seat = $this->createValidSeat();
-        
+
         $seat->reserve(999);
-        
+
         $this->expectException(SeatAlreadySoldException::class);
         $this->expectExceptionMessage('Seat A-10 is already sold.');
-        
+
         $seat->reserve(1000); // Try to reserve again
     }
 }

@@ -1,8 +1,10 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing\Infrastructure\Jobs;
 
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -10,14 +12,13 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-use Src\Ticketing\Domain\Repositories\ReservationRepository;
-use Src\Ticketing\Domain\Repositories\TicketRepository;
-use Src\Ticketing\Domain\Repositories\StockManager;
-use Src\Ticketing\Domain\Ports\PaymentGateway;
-use Src\Ticketing\Domain\Model\Ticket;
-use Src\Ticketing\Domain\Events\TicketSold;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
-use Exception;
+use Src\Ticketing\Domain\Events\TicketSold;
+use Src\Ticketing\Domain\Model\Ticket;
+use Src\Ticketing\Domain\Ports\PaymentGateway;
+use Src\Ticketing\Domain\Repositories\ReservationRepository;
+use Src\Ticketing\Domain\Repositories\StockManager;
+use Src\Ticketing\Domain\Repositories\TicketRepository;
 use Throwable;
 
 class ProcessTicketPayment implements ShouldQueue
@@ -36,7 +37,7 @@ class ProcessTicketPayment implements ShouldQueue
     ): void {
         $reservation = $reservationRepository->find($this->reservationId);
 
-        if (!$reservation) {
+        if (! $reservation) {
             return;
         }
 
@@ -54,8 +55,8 @@ class ProcessTicketPayment implements ShouldQueue
                 // Re-acquire lock to prevent race conditions with expiry jobs
                 $lockedReservation = $reservationRepository->findAndLock($reservation->id());
 
-                if (!$lockedReservation || $lockedReservation->status() !== ReservationStatus::PENDING_PAYMENT) {
-                    throw new Exception("Reservation expired or cancelled during payment processing.");
+                if (! $lockedReservation || $lockedReservation->status() !== ReservationStatus::PENDING_PAYMENT) {
+                    throw new Exception('Reservation expired or cancelled during payment processing.');
                 }
 
                 // Confirm Reservation
@@ -78,7 +79,7 @@ class ProcessTicketPayment implements ShouldQueue
 
         } catch (Throwable $e) {
             // Compensation logic (Saga rollback)
-            
+
             DB::transaction(function () use ($reservation, $reservationRepository, $ticketRepository, $stockManager) {
                 $reservation->cancel();
                 $reservationRepository->save($reservation);
@@ -86,14 +87,14 @@ class ProcessTicketPayment implements ShouldQueue
                 // Release the seat lock
                 $seat = $ticketRepository->findAndLock($reservation->seatId());
                 if ($seat && $seat->reservedByUserId() === $reservation->userId()) {
-                     $seat->release();
-                     $ticketRepository->save($seat);
+                    $seat->release();
+                    $ticketRepository->save($seat);
                 }
-                
+
                 // Revert Redis Stock
                 $stockManager->revertReservation($reservation->eventId());
             });
-            
+
             // In a real system, you might want to log this or notify the user via email
             // throw $e; // Don't throw if you handled the compensation, unless you want retry.
         }

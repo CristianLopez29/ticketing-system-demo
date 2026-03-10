@@ -1,22 +1,23 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing\Infrastructure\Persistence;
 
+use DateTimeImmutable;
+use Illuminate\Support\Facades\DB;
+use Src\Ticketing\Domain\Enums\ReservationStatus;
 use Src\Ticketing\Domain\Model\Reservation;
 use Src\Ticketing\Domain\Repositories\ReservationRepository;
 use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Domain\ValueObjects\SeatId;
-use Src\Ticketing\Domain\Enums\ReservationStatus;
-use Illuminate\Support\Facades\DB;
-use DateTimeImmutable;
 
 class EloquentReservationRepository implements ReservationRepository
 {
     public function save(Reservation $reservation): void
     {
         $data = $reservation->toArray();
-        
+
         DB::table('reservations')->updateOrInsert(
             ['id' => $reservation->id()],
             [
@@ -37,7 +38,7 @@ class EloquentReservationRepository implements ReservationRepository
     {
         $record = DB::table('reservations')->find($id);
 
-        if (!$record) {
+        if (! $record) {
             return null;
         }
 
@@ -57,7 +58,7 @@ class EloquentReservationRepository implements ReservationRepository
     {
         $record = DB::table('reservations')->where('id', $id)->lockForUpdate()->first();
 
-        if (!$record) {
+        if (! $record) {
             return null;
         }
 

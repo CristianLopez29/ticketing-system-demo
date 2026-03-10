@@ -7,9 +7,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Laravel\Sanctum\Sanctum;
-use Tests\TestCase;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
-use DateTimeImmutable;
+use Tests\TestCase;
 
 class PurchaseSeasonTicketTest extends TestCase
 {
@@ -76,7 +75,7 @@ class PurchaseSeasonTicketTest extends TestCase
                 'reserved_by_user_id' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]
+            ],
         ]);
 
         Redis::set("event:{$event1Id}:stock", 100);
@@ -87,12 +86,12 @@ class PurchaseSeasonTicketTest extends TestCase
             'season_id' => $seasonId,
             'row' => 'A',
             'number' => 1,
-            'idempotency_key' => 'uuid-12345'
+            'idempotency_key' => 'uuid-12345',
         ]);
 
         // 3. Assert
         $response->assertStatus(201);
-        
+
         // Check Season Ticket created
         $this->assertDatabaseHas('season_tickets', [
             'season_id' => $seasonId,
@@ -101,7 +100,7 @@ class PurchaseSeasonTicketTest extends TestCase
             'number' => 1,
             'status' => ReservationStatus::PENDING_PAYMENT->value,
             // Price should be sum (5000 + 6000) * 0.8 = 11000 * 0.8 = 8800
-            'price_amount' => 8800
+            'price_amount' => 8800,
         ]);
 
         // Check Individual Seats are reserved
@@ -109,14 +108,14 @@ class PurchaseSeasonTicketTest extends TestCase
             'event_id' => $event1Id,
             'row' => 'A',
             'number' => 1,
-            'reserved_by_user_id' => $userId
+            'reserved_by_user_id' => $userId,
         ]);
 
         $this->assertDatabaseHas('seats', [
             'event_id' => $event2Id,
             'row' => 'A',
             'number' => 1,
-            'reserved_by_user_id' => $userId
+            'reserved_by_user_id' => $userId,
         ]);
     }
 
@@ -152,7 +151,7 @@ class PurchaseSeasonTicketTest extends TestCase
         $otherUserId = $user1->id;
         $userId = $user2->id;
         Sanctum::actingAs($user2);
-        
+
         DB::table('seats')->insert([
             [
                 'event_id' => $event1Id,
@@ -173,7 +172,7 @@ class PurchaseSeasonTicketTest extends TestCase
                 'reserved_by_user_id' => $otherUserId, // SOLD!
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]
+            ],
         ]);
 
         Redis::set("event:{$event1Id}:stock", 100);
@@ -184,11 +183,11 @@ class PurchaseSeasonTicketTest extends TestCase
             'season_id' => $seasonId,
             'row' => 'A',
             'number' => 1,
-            'idempotency_key' => 'uuid-failure'
+            'idempotency_key' => 'uuid-failure',
         ]);
 
         if ($response->status() !== 409) {
-            fwrite(STDERR, "PurchaseSeasonTicketTest Failure (409): " . $response->content() . "\n");
+            fwrite(STDERR, 'PurchaseSeasonTicketTest Failure (409): '.$response->content()."\n");
         }
 
         // 3. Assert
@@ -198,7 +197,7 @@ class PurchaseSeasonTicketTest extends TestCase
         // Verify NO reservation was made (Atomic Rollback)
         $this->assertDatabaseMissing('season_tickets', [
             'season_id' => $seasonId,
-            'user_id' => $userId
+            'user_id' => $userId,
         ]);
 
         // Verify Seat 1 is still available (rollback worked)
@@ -206,7 +205,7 @@ class PurchaseSeasonTicketTest extends TestCase
             'event_id' => $event1Id,
             'row' => 'A',
             'number' => 1,
-            'reserved_by_user_id' => null
+            'reserved_by_user_id' => null,
         ]);
     }
 
@@ -225,7 +224,7 @@ class PurchaseSeasonTicketTest extends TestCase
         // Previous Owner
         $ownerUser = User::factory()->create();
         $ownerUserId = $ownerUser->id;
-        
+
         DB::table('season_tickets')->insert([
             'id' => 'old-ticket-id',
             'season_id' => $prevSeasonId,
@@ -282,12 +281,12 @@ class PurchaseSeasonTicketTest extends TestCase
             'season_id' => $seasonId,
             'row' => 'A',
             'number' => 1,
-            'idempotency_key' => 'uuid-renewal-fail'
+            'idempotency_key' => 'uuid-renewal-fail',
         ]);
 
         // 3. Assert
         $response->assertStatus(409);
-        $response->assertJsonFragment(['error' => "Renewal Period: This seat is reserved for the previous owner."]);
+        $response->assertJsonFragment(['error' => 'Renewal Period: This seat is reserved for the previous owner.']);
     }
 
     public function test_renewal_window_allows_owner(): void
@@ -305,7 +304,7 @@ class PurchaseSeasonTicketTest extends TestCase
         // Previous Owner
         $ownerUser = User::factory()->create();
         $ownerUserId = $ownerUser->id;
-        
+
         DB::table('season_tickets')->insert([
             'id' => 'old-ticket-id-2',
             'season_id' => $prevSeasonId,
@@ -360,11 +359,11 @@ class PurchaseSeasonTicketTest extends TestCase
             'season_id' => $seasonId,
             'row' => 'A',
             'number' => 1,
-            'idempotency_key' => 'uuid-renewal-success'
+            'idempotency_key' => 'uuid-renewal-success',
         ]);
 
         if ($response->status() !== 201) {
-            fwrite(STDERR, "PurchaseSeasonTicketTest Failure (Renewal 201): " . $response->content() . "\n");
+            fwrite(STDERR, 'PurchaseSeasonTicketTest Failure (Renewal 201): '.$response->content()."\n");
         }
 
         // 3. Assert
@@ -372,7 +371,7 @@ class PurchaseSeasonTicketTest extends TestCase
         $this->assertDatabaseHas('season_tickets', [
             'season_id' => $seasonId,
             'user_id' => $ownerUserId,
-            'status' => ReservationStatus::PENDING_PAYMENT->value
+            'status' => ReservationStatus::PENDING_PAYMENT->value,
         ]);
     }
 }
