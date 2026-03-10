@@ -25,4 +25,3 @@ class LoginThrottlingTest extends TestCase
         $this->postJson('/api/login', $payload)->assertStatus(429);
     }
 }
-

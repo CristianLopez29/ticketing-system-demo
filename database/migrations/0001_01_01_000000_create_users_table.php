@@ -19,8 +19,6 @@ return new class extends Migration
             $table->string('password');
             $table->rememberToken();
             $table->string('role')->default('admin');
-            $table->unsignedBigInteger('candidate_id')->nullable();
-            $table->unsignedBigInteger('evaluator_id')->nullable();
             $table->timestamps();
         });
 

@@ -1,9 +1,7 @@
 <?php
 
-use App\Http\Middleware\SecurityHeaders;
-use App\Http\Middleware\EnsureCandidateAccess;
-use App\Http\Middleware\EnsureEvaluatorAccess;
 use App\Http\Middleware\EnsureRole;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -20,8 +18,6 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => EnsureRole::class,
-            'can.view.candidate' => EnsureCandidateAccess::class,
-            'can.view.evaluator' => EnsureEvaluatorAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

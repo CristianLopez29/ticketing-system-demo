@@ -15,7 +15,7 @@ class AuthRequiredTest extends TestCase
     #[Test]
     public function api_endpoints_require_admin_role(): void
     {
-        $user = User::factory()->create(['role' => 'candidate']);
+        $user = User::factory()->create(['role' => 'user']);
         Sanctum::actingAs($user, ['*']);
 
         $this->getJson('/api/reports/download')->assertStatus(403);
@@ -26,7 +26,7 @@ class AuthRequiredTest extends TestCase
     public function admin_can_revoke_all_tokens_for_a_user(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $target = User::factory()->create(['role' => 'candidate']);
+        $target = User::factory()->create(['role' => 'user']);
 
         $target->createToken('api');
         $this->assertDatabaseCount('personal_access_tokens', 1);

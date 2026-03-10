@@ -21,7 +21,7 @@ class SecurityHeaders
         ];
 
         foreach ($headers as $name => $value) {
-            if (!$response->headers->has($name)) {
+            if (! $response->headers->has($name)) {
                 $response->headers->set($name, $value);
             }
         }
@@ -29,4 +29,3 @@ class SecurityHeaders
         return $response;
     }
 }
-

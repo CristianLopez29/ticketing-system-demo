@@ -4,12 +4,10 @@ namespace Tests\Security\Acceptance;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\PersonalAccessToken;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
-
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class TokenManagementTest extends TestCase
 {
@@ -23,13 +21,13 @@ class TokenManagementTest extends TestCase
 
         $user = User::factory()->create(['role' => 'admin']);
         $accessToken = $user->createToken('api');
-        $plainTextToken = $accessToken->plainTextToken;
+        $plainTextToken = (string) $accessToken->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $plainTextToken)
+        $response = $this->withHeader('Authorization', 'Bearer '.$plainTextToken)
             ->postJson('/api/refresh-token');
 
         if ($response->status() !== 200) {
-            throw new \Exception("FAILURE CONTENT: " . $response->content() . " | HEADERS: " . json_encode($response->headers->all()));
+            throw new \Exception('FAILURE CONTENT: '.$response->content().' | HEADERS: '.json_encode($response->headers->all()));
         }
 
         $response->assertStatus(200);
@@ -38,8 +36,9 @@ class TokenManagementTest extends TestCase
         $this->assertIsArray($json);
         $this->assertArrayHasKey('token', $json);
         $this->assertNotSame($plainTextToken, $json['token']);
+        $this->assertIsString($json['token']);
 
-        $this->withHeader('Authorization', 'Bearer ' . $json['token'])
+        $this->withHeader('Authorization', 'Bearer '.$json['token'])
             ->getJson('/api/reports/download?file=test.csv')
             ->assertStatus(200);
     }
