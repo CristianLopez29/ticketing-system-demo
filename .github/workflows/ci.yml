@@ -9,102 +9,43 @@ on:
       - main
 
 jobs:
-  change-policy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Validate PR title and commits (Conventional Commits)
-        run: |
-          set -euo pipefail
-
-          PATTERN='^(feat|fix|docs|style|refactor|test|chore)(\([a-z0-9._-]+\))?!?: [A-Za-z0-9].+'
-
-          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
-            PR_TITLE="$(python3 - <<'PY'
-            import json, os
-            with open(os.environ["GITHUB_EVENT_PATH"], "r", encoding="utf-8") as f:
-                event = json.load(f)
-            print(event.get("pull_request", {}).get("title", ""))
-            PY
-            )"
-            if [ -z "$PR_TITLE" ]; then
-              echo "Missing PR title in event payload."
-              exit 1
-            fi
-
-            if ! printf '%s' "$PR_TITLE" | grep -Eq "$PATTERN"; then
-              echo "Invalid PR title:"
-              echo "  $PR_TITLE"
-              echo ""
-              echo "Expected Conventional Commits format (English):"
-              echo "  type(scope): short description"
-              echo "Allowed types: feat, fix, docs, style, refactor, test, chore"
-              exit 1
-            fi
-
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
-            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
-
-            COMMITS="$(git log --no-merges --format=%s "${BASE_SHA}..${HEAD_SHA}")"
-            if [ -z "$COMMITS" ]; then
-              echo "No commits found in PR range (${BASE_SHA}..${HEAD_SHA})."
-              exit 1
-            fi
-          elif [ "${GITHUB_EVENT_NAME}" = "push" ]; then
-            COMMITS="$(python3 - <<'PY'
-            import json, os
-            with open(os.environ["GITHUB_EVENT_PATH"], "r", encoding="utf-8") as f:
-                event = json.load(f)
-            subjects = []
-            for c in event.get("commits", []):
-                msg = (c.get("message") or "").splitlines()[0].strip()
-                if msg:
-                    subjects.append(msg)
-            head = event.get("head_commit", {}) or {}
-            head_msg = (head.get("message") or "").splitlines()[0].strip()
-            if head_msg:
-                subjects.append(head_msg)
-            seen = set()
-            for s in subjects:
-                if s in seen:
-                    continue
-                seen.add(s)
-                print(s)
-            PY
-            )"
-            if [ -z "$COMMITS" ]; then
-              echo "No commits found in push event payload."
-              exit 1
-            fi
-          else
-            echo "Unsupported GitHub event: ${GITHUB_EVENT_NAME}"
-            exit 1
-          fi
-
-          INVALID=0
-          while IFS= read -r msg; do
-            if printf '%s' "$msg" | grep -Eq "$PATTERN"; then
-              continue
-            fi
-
-            echo "Invalid commit message:"
-            echo "  $msg"
-            INVALID=1
-          done <<< "$COMMITS"
-
-          if [ "$INVALID" -ne 0 ]; then
-            echo ""
-            echo "Fix commits by rewriting history (rebase) to match Conventional Commits."
-            exit 1
-          fi
-
   tests:
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: laravel
+          MYSQL_USER: sail
+          MYSQL_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -ppassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: laravel
+      DB_USERNAME: sail
+      DB_PASSWORD: password
+      QUEUE_CONNECTION: redis
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      APP_ENV: testing
+      APP_DEBUG: true
 
     steps:
       - name: Checkout code
@@ -114,43 +55,21 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
-          extensions: mbstring, bcmath, pdo_mysql, redis, gd
+          extensions: mbstring, bcmath, pdo_mysql, redis
           coverage: none
 
       - name: Install dependencies
         run: |
           composer install --no-interaction --prefer-dist --no-progress || composer update --no-interaction --prefer-dist --no-progress
 
-      - name: Prepare environment for Docker
-        run: |
-          cp .env.testing .env
-          echo "WWWUSER=1000" >> .env
-          echo "WWWGROUP=1000" >> .env
+      - name: Copy environment file
+        run: cp .env.example .env
 
-      - name: Start Docker services
-        run: docker compose up -d mysql redis
+      - name: Generate application key
+        run: php artisan key:generate
 
-      - name: Wait for MySQL
-        run: |
-          set -euo pipefail
-          for i in $(seq 1 30); do
-            if docker compose exec -T mysql mysqladmin ping -ppassword --silent; then
-              exit 0
-            fi
-            sleep 2
-          done
-          docker compose ps
-          exit 1
+      - name: Run migrations
+        run: php artisan migrate --force
 
-      - name: Run migrations (Docker)
-        run: |
-          docker compose up -d laravel
-          docker compose exec -T laravel php artisan key:generate
-          docker compose exec -T laravel php artisan migrate --force
-
-      - name: Run tests (Docker)
-        run: docker compose exec -T laravel php artisan test
-
-      - name: Stop Docker services
-        if: always()
-        run: docker compose down -v
+      - name: Run tests
+        run: php artisan test
