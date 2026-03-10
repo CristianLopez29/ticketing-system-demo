@@ -99,8 +99,10 @@ class PurchaseSeasonTicketUseCase
                 $seatsToReserve[] = $seat;
             }
 
-            $discountPercent = config('ticketing.season_ticket_discount', 20);
-            $discountedAmount = (int) ($totalAmount * (1 - $discountPercent / 100));
+            $discountPercentValue = config('ticketing.season_ticket_discount', 20);
+            $discountPercent = is_numeric($discountPercentValue) ? (int) $discountPercentValue : 20;
+            $discountPercent = max(0, min(100, $discountPercent));
+            $discountedAmount = (int) ($totalAmount * (1 - ($discountPercent / 100)));
 
             $seasonTicket = new SeasonTicket(
                 (string) Str::uuid(),

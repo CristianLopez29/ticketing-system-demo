@@ -18,20 +18,47 @@ class PurchaseSeasonTicketController
 {
     public function __invoke(Request $request, PurchaseSeasonTicketUseCase $useCase): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'season_id' => 'required|integer',
             'row' => 'required|string',
             'number' => 'required|integer',
             'idempotency_key' => 'required|string',
         ]);
 
+        $user = $request->user();
+        if (! $user) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
+        }
+
+        $seasonIdValue = $validated['season_id'] ?? null;
+        $seasonId = filter_var($seasonIdValue, FILTER_VALIDATE_INT);
+        if ($seasonId === false) {
+            return new JsonResponse(['error' => 'Invalid season_id'], 422);
+        }
+
+        $numberValue = $validated['number'] ?? null;
+        $number = filter_var($numberValue, FILTER_VALIDATE_INT);
+        if ($number === false) {
+            return new JsonResponse(['error' => 'Invalid number'], 422);
+        }
+
+        $rowValue = $validated['row'] ?? null;
+        if (! is_string($rowValue)) {
+            return new JsonResponse(['error' => 'Invalid row'], 422);
+        }
+
+        $idempotencyKeyValue = $validated['idempotency_key'] ?? null;
+        if (! is_string($idempotencyKeyValue)) {
+            return new JsonResponse(['error' => 'Invalid idempotency_key'], 422);
+        }
+
         try {
             $dto = new PurchaseSeasonTicketRequestDTO(
-                (int) $request->input('season_id'),
-                (int) $request->user()->id,
-                (string) $request->input('row'),
-                (int) $request->input('number'),
-                (string) $request->input('idempotency_key')
+                $seasonId,
+                (int) $user->id,
+                $rowValue,
+                $number,
+                $idempotencyKeyValue
             );
 
             $seasonTicket = $useCase->execute($dto);

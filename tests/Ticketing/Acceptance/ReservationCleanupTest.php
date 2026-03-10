@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Testing\PendingCommand;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
 use Src\Ticketing\Infrastructure\Persistence\EventModel;
 use Src\Ticketing\Infrastructure\Persistence\SeatModel;
@@ -54,7 +55,14 @@ class ReservationCleanupTest extends TestCase
         ]);
 
         // 2. Run Command
-        $this->artisan('ticketing:cleanup-expired-reservations')
+        $pending = $this->artisan('ticketing:cleanup-expired-reservations');
+        if (is_int($pending)) {
+            $this->fail('Expected a PendingCommand instance.');
+        }
+
+        $this->assertInstanceOf(PendingCommand::class, $pending);
+
+        $pending
             ->expectsOutput('Found 1 expired reservations. Processing...')
             ->expectsOutput("Cleaned up reservation: {$reservationId}")
             ->assertExitCode(0);

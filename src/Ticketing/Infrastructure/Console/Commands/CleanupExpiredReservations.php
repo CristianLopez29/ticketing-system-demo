@@ -39,23 +39,26 @@ class CleanupExpiredReservations extends Command
 
         foreach ($expiredReservations as $reservation) {
             try {
-                DB::transaction(function () use ($reservation, $reservationRepository, $ticketRepository, $stockManager) {
+                $didCleanup = DB::transaction(function () use ($reservation, $reservationRepository, $ticketRepository, $stockManager): bool {
                     // Atomic state verification
                     // Pessimistic lock to prevent race conditions with payment processing
                     $lockedReservation = $reservationRepository->findAndLock($reservation->id());
 
                     if (! $lockedReservation) {
-                        return;
+                        return false;
                     }
 
-                    if ($lockedReservation->status() !== ReservationStatus::PENDING_PAYMENT) {
-                        // Skip if state mutated concurrently
-                        return;
-                    }
+                    $updated = DB::table('reservations')
+                        ->where('id', $lockedReservation->id())
+                        ->where('status', ReservationStatus::PENDING_PAYMENT->value)
+                        ->update([
+                            'status' => ReservationStatus::CANCELLED->value,
+                            'updated_at' => now(),
+                        ]);
 
-                    // Mark reservation as cancelled
-                    $lockedReservation->cancel();
-                    $reservationRepository->save($lockedReservation);
+                    if ($updated !== 1) {
+                        return false;
+                    }
 
                     // Release seat allocation
                     // Verify ownership before release
@@ -68,9 +71,13 @@ class CleanupExpiredReservations extends Command
 
                     // Revert distributed stock counter
                     $stockManager->revertReservation($lockedReservation->eventId());
+
+                    return true;
                 });
 
-                $this->info("Cleaned up reservation: {$reservation->id()}");
+                if ($didCleanup) {
+                    $this->info("Cleaned up reservation: {$reservation->id()}");
+                }
 
             } catch (Throwable $e) {
                 $this->error("Failed to cleanup reservation {$reservation->id()}: {$e->getMessage()}");

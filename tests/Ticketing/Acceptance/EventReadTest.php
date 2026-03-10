@@ -54,12 +54,19 @@ class EventReadTest extends TestCase
             ->assertJsonCount(2);
 
         $data = $response->json();
+        $this->assertIsArray($data);
 
-        $this->assertEquals('sold', $data[0]['status']);
-        $this->assertEquals(1, $data[0]['number']);
+        $first = $data[0] ?? null;
+        $second = $data[1] ?? null;
 
-        $this->assertEquals('available', $data[1]['status']);
-        $this->assertEquals(2, $data[1]['number']);
+        $this->assertIsArray($first);
+        $this->assertIsArray($second);
+
+        $this->assertEquals('sold', $first['status'] ?? null);
+        $this->assertEquals(1, $first['number'] ?? null);
+
+        $this->assertEquals('available', $second['status'] ?? null);
+        $this->assertEquals(2, $second['number'] ?? null);
     }
 
     public function test_can_fetch_event_stats(): void
