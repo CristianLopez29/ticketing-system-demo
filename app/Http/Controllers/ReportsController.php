@@ -17,11 +17,10 @@ class ReportsController extends Controller
         }
 
         $disk = Storage::disk('reports');
-        if (!$disk->exists($name)) {
+        if (! $disk->exists($name)) {
             abort(404);
         }
 
         return $disk->download($name);
     }
 }
-

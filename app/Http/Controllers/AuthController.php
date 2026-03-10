@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -70,6 +71,22 @@ class AuthController extends Controller
 
         return new JsonResponse([
             'token' => $newToken,
+        ], Response::HTTP_OK);
+    }
+
+    public function revokeAllTokens(int $id): JsonResponse
+    {
+        $user = User::query()->find($id);
+        if (! $user) {
+            return new JsonResponse([
+                'message' => 'User not found',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $user->tokens()->delete();
+
+        return new JsonResponse([
+            'message' => 'All tokens revoked',
         ], Response::HTTP_OK);
     }
 }
