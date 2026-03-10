@@ -31,7 +31,7 @@ class Reservation extends AggregateRoot
         int $durationMinutes = 5
     ): self {
         return new self(
-            uniqid('res_', true),
+            self::generateUuid(),
             $eventId,
             $seatId,
             $userId,
@@ -122,5 +122,20 @@ class Reservation extends AggregateRoot
             'expires_at' => $this->expiresAt->format(DateTimeImmutable::ATOM),
             'created_at' => $this->createdAt->format(DateTimeImmutable::ATOM),
         ];
+    }
+
+    /**
+     * Generate a UUID v4 (RFC 4122) without framework dependencies.
+     */
+    private static function generateUuid(): string
+    {
+        $bytes = random_bytes(16);
+
+        // Set version to 4 (0100)
+        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+        // Set variant to RFC 4122 (10xx)
+        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+
+        return vsprintf('res_%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
     }
 }

@@ -4,6 +4,8 @@ import { randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 import { uuidv4 } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost';
+const LOGIN_EMAIL = __ENV.LOGIN_EMAIL || 'stress@test.com';
+const LOGIN_PASSWORD = __ENV.LOGIN_PASSWORD || 'password';
 
 export const options = {
   scenarios: {
@@ -26,17 +28,32 @@ export const options = {
   },
 };
 
-export default function () {
+// Authenticate once during setup and share the token across all VUs
+export function setup() {
+  const loginRes = http.post(`${BASE_URL}/api/login`, JSON.stringify({
+    email: LOGIN_EMAIL,
+    password: LOGIN_PASSWORD,
+  }), {
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+  });
+
+  check(loginRes, {
+    'login succeeded': (r) => r.status === 200,
+  });
+
+  const body = JSON.parse(loginRes.body);
+  return { token: body.token };
+}
+
+export default function (data) {
   // Target a subset of seats to force contention
   const eventId = 1;
   const seatId = randomIntBetween(1, 100);
-  const userId = randomIntBetween(1, 10000);
   const idempotencyKey = uuidv4();
 
   const payload = JSON.stringify({
     event_id: eventId,
     seat_id: seatId,
-    user_id: userId,
   });
 
   const params = {
@@ -44,13 +61,14 @@ export default function () {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       'Idempotency-Key': idempotencyKey,
+      'Authorization': `Bearer ${data.token}`,
     },
   };
 
   const res = http.post(`${BASE_URL}/api/tickets/purchase`, payload, params);
 
   check(res, {
-    'status is 201, 409 or 422': (r) => [201, 409, 422].includes(r.status),
+    'status is 202, 409 or 422': (r) => [202, 409, 422].includes(r.status),
     'no 500 errors': (r) => r.status !== 500,
   });
 }

@@ -8,6 +8,7 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call(StressTestSeeder::class);
+        // Default seeder for general-purpose data.
+        // For stress testing, run explicitly: php artisan db:seed --class=StressTestSeeder
     }
 }
