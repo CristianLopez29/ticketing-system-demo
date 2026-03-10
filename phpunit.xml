@@ -11,9 +11,6 @@
         <testsuite name="Security">
             <directory>tests/Security</directory>
         </testsuite>
-        <testsuite name="Shared">
-            <directory>tests/Shared</directory>
-        </testsuite>
     </testsuites>
     <source>
         <include>

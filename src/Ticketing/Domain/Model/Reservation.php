@@ -47,6 +47,11 @@ class Reservation extends AggregateRoot
         return $this->id;
     }
 
+    public function eventId(): int
+    {
+        return $this->eventId;
+    }
+
     public function seatId(): SeatId
     {
         return $this->seatId;
@@ -65,6 +70,11 @@ class Reservation extends AggregateRoot
     public function status(): ReservationStatus
     {
         return $this->status;
+    }
+
+    public function expiresAt(): DateTimeImmutable
+    {
+        return $this->expiresAt;
     }
 
     public function isExpired(): bool

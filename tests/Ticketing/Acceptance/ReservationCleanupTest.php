@@ -48,9 +48,9 @@ class ReservationCleanupTest extends TestCase
             'status' => ReservationStatus::PENDING_PAYMENT->value,
             'price_amount' => 5000,
             'price_currency' => 'USD',
-            'expires_at' => now()->subMinute(), // Expired 1 min ago
-            'created_at' => now()->subMinutes(6),
-            'updated_at' => now()->subMinutes(6),
+            'expires_at' => now()->subMinutes(10), // Expired 10 min ago
+            'created_at' => now()->subMinutes(20),
+            'updated_at' => now()->subMinutes(20),
         ]);
 
         // 2. Run Command

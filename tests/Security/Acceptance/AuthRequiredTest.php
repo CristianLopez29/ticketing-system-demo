@@ -18,10 +18,8 @@ class AuthRequiredTest extends TestCase
         $user = User::factory()->create(['role' => 'candidate']);
         Sanctum::actingAs($user, ['*']);
 
-        $this->getJson('/api/candidates')->assertStatus(403);
-        $this->getJson('/api/evaluators/consolidated')->assertStatus(403);
-        $this->postJson('/api/evaluators', [])->assertStatus(403);
-        $this->postJson('/api/evaluators/1/assign-candidate', ['candidate_id' => 1])->assertStatus(403);
+        $this->getJson('/api/reports/download')->assertStatus(403);
+        $this->postJson('/api/users/1/tokens/revoke-all')->assertStatus(403);
     }
 
     #[Test]
