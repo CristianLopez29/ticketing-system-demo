@@ -46,7 +46,8 @@ class EventController
             ->where('event_id', $eventId)
             ->count();
 
-        $redisStock = Redis::get("event:{$eventId}:stock");
+        $redisStockValue = Redis::get("event:{$eventId}:stock");
+        $redisStock = is_numeric($redisStockValue) ? (int) $redisStockValue : 0;
 
         $ticketsIssued = DB::table('tickets')
             ->where('event_id', $eventId)
@@ -60,10 +61,10 @@ class EventController
         return new JsonResponse([
             'total_seats' => $totalSeats,
             'sold_seats_db' => $dbSold,
-            'available_stock_redis' => (int) $redisStock,
+            'available_stock_redis' => $redisStock,
             'tickets_issued' => $ticketsIssued,
             'reservations_pending' => $reservationsPending,
-            'integrity_check' => ($dbSold + (int) $redisStock) === $totalSeats ? 'OK' : 'MISMATCH',
+            'integrity_check' => ($dbSold + $redisStock) === $totalSeats ? 'OK' : 'MISMATCH',
         ]);
     }
 }

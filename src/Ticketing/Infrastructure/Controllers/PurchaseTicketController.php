@@ -36,11 +36,18 @@ class PurchaseTicketController
             'seat_id' => 'required|integer',
         ]);
 
+        $user = $request->user();
+        if (! $user) {
+            return new JsonResponse([
+                'error' => 'Unauthorized',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
         try {
             $dto = new PurchaseTicketRequestDTO(
                 (int) $validated['event_id'],
                 new SeatId((int) $validated['seat_id']),
-                (int) $request->user()->id,
+                (int) $user->id,
                 $idempotencyKey
             );
 
