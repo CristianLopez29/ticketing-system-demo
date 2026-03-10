@@ -1,15 +1,15 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing\Infrastructure\Persistence;
 
+use Illuminate\Support\Facades\DB;
 use Src\Ticketing\Domain\Model\Seat;
 use Src\Ticketing\Domain\Model\Ticket;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
 use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Domain\ValueObjects\SeatId;
-use Illuminate\Support\Facades\DB;
-use DateTimeImmutable;
 
 class EloquentTicketRepository implements TicketRepository
 {
@@ -18,7 +18,7 @@ class EloquentTicketRepository implements TicketRepository
         // Enforce pessimistic lock (SELECT ... FOR UPDATE)
         $record = DB::table('seats')->where('id', $id->value())->lockForUpdate()->first();
 
-        if (!$record) {
+        if (! $record) {
             return null;
         }
 
@@ -34,7 +34,7 @@ class EloquentTicketRepository implements TicketRepository
             ->lockForUpdate()
             ->first();
 
-        if (!$record) {
+        if (! $record) {
             return null;
         }
 

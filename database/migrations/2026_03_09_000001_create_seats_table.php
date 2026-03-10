@@ -16,7 +16,7 @@ return new class extends Migration
             $table->integer('price_amount'); // cents
             $table->string('price_currency');
             $table->unsignedBigInteger('reserved_by_user_id')->nullable();
-            
+
             $table->unique(['event_id', 'row', 'number']);
             $table->timestamps();
         });

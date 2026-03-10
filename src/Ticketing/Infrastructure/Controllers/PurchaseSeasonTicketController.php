@@ -1,17 +1,18 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing\Infrastructure\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Src\Ticketing\Application\UseCases\PurchaseSeasonTicketUseCase;
-use Src\Ticketing\Application\DTOs\PurchaseSeasonTicketRequestDTO;
-use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use RuntimeException;
+use Src\Ticketing\Application\DTOs\PurchaseSeasonTicketRequestDTO;
+use Src\Ticketing\Application\UseCases\PurchaseSeasonTicketUseCase;
+use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Throwable;
-use Illuminate\Support\Facades\Log;
 
 class PurchaseSeasonTicketController
 {
@@ -43,7 +44,7 @@ class PurchaseSeasonTicketController
                     'currency' => $seasonTicket->price()->currency(),
                 ],
                 'expires_at' => $seasonTicket->expiresAt()?->format(DATE_ATOM),
-                'message' => 'Season ticket reserved successfully. Please proceed to payment.'
+                'message' => 'Season ticket reserved successfully. Please proceed to payment.',
             ], 201);
 
         } catch (SeatAlreadySoldException $e) {
@@ -53,7 +54,8 @@ class PurchaseSeasonTicketController
         } catch (RuntimeException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 422);
         } catch (Throwable $e) {
-            Log::error('Season ticket purchase failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('Season ticket purchase failed: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+
             return new JsonResponse(['error' => 'An unexpected error occurred.'], 500);
         }
     }

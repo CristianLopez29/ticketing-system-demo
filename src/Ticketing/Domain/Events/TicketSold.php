@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing\Domain\Events;
@@ -14,7 +15,7 @@ readonly class TicketSold implements DomainEvent
         public SeatId $seatId,
         public int $userId
     ) {
-        $this->occurredOn = new \DateTimeImmutable();
+        $this->occurredOn = new \DateTimeImmutable;
     }
 
     public function occurredOn(): \DateTimeImmutable

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing\Infrastructure\Payment;
@@ -13,8 +14,8 @@ class StripePaymentGateway implements PaymentGateway
     {
         throw new RuntimeException(
             'Stripe payment gateway is not implemented. '
-            . 'Set PAYMENT_GATEWAY_DRIVER=fake for development, '
-            . 'or implement the Stripe integration in this class.'
+            .'Set PAYMENT_GATEWAY_DRIVER=fake for development, '
+            .'or implement the Stripe integration in this class.'
         );
     }
 }

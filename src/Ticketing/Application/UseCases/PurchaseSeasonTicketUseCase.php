@@ -1,23 +1,24 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing\Application\UseCases;
 
+use DateTimeImmutable;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use InvalidArgumentException;
+use RuntimeException;
 use Src\Ticketing\Application\DTOs\PurchaseSeasonTicketRequestDTO;
-use Src\Ticketing\Domain\Repositories\SeasonRepository;
-use Src\Ticketing\Domain\Repositories\EventRepository;
-use Src\Ticketing\Domain\Repositories\TicketRepository;
-use Src\Ticketing\Domain\Repositories\SeasonTicketRepository;
-use Src\Ticketing\Domain\Repositories\StockManager;
-use Src\Ticketing\Domain\Model\SeasonTicket;
-use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
 use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
-use Illuminate\Support\Facades\DB;
-use DateTimeImmutable;
-use RuntimeException;
-use InvalidArgumentException;
-use Illuminate\Support\Str;
+use Src\Ticketing\Domain\Model\SeasonTicket;
+use Src\Ticketing\Domain\Repositories\EventRepository;
+use Src\Ticketing\Domain\Repositories\SeasonRepository;
+use Src\Ticketing\Domain\Repositories\SeasonTicketRepository;
+use Src\Ticketing\Domain\Repositories\StockManager;
+use Src\Ticketing\Domain\Repositories\TicketRepository;
+use Src\Ticketing\Domain\ValueObjects\Money;
 
 class PurchaseSeasonTicketUseCase
 {
@@ -33,12 +34,12 @@ class PurchaseSeasonTicketUseCase
     {
         // Validate season existence
         $season = $this->seasonRepository->find($request->seasonId);
-        if (!$season) {
+        if (! $season) {
             throw new InvalidArgumentException("Season not found: {$request->seasonId}");
         }
 
         // Enforce renewal constraints
-        $now = new DateTimeImmutable();
+        $now = new DateTimeImmutable;
         if ($season->isRenewalWindow($now)) {
             $previousSeasonId = $season->previousSeasonId();
             if ($previousSeasonId) {
@@ -49,13 +50,13 @@ class PurchaseSeasonTicketUseCase
                     $request->number
                 );
 
-                if (!$previousTicket) {
-                     // Seat was not sold in previous season, or logic dictates it's locked.
-                     throw new SeatAlreadySoldException("Renewal Period: This seat was not reserved in the previous season, so it cannot be renewed. Wait for general sale.");
+                if (! $previousTicket) {
+                    // Seat was not sold in previous season, or logic dictates it's locked.
+                    throw new SeatAlreadySoldException('Renewal Period: This seat was not reserved in the previous season, so it cannot be renewed. Wait for general sale.');
                 }
 
                 if ($previousTicket->userId() !== $request->userId) {
-                    throw new SeatAlreadySoldException("Renewal Period: This seat is reserved for the previous owner.");
+                    throw new SeatAlreadySoldException('Renewal Period: This seat is reserved for the previous owner.');
                 }
             }
         }
@@ -81,13 +82,13 @@ class PurchaseSeasonTicketUseCase
                     $request->number
                 );
 
-                if (!$seat) {
+                if (! $seat) {
                     throw new RuntimeException(
                         "Seat {$request->row}-{$request->number} does not exist for event {$event->id()}"
                     );
                 }
 
-                if (!$seat->isAvailable()) {
+                if (! $seat->isAvailable()) {
                     throw new SeatAlreadySoldException(
                         "Seat {$request->row}-{$request->number} is already sold for event {$event->id()}"
                     );
@@ -110,7 +111,7 @@ class PurchaseSeasonTicketUseCase
                 new Money($discountedAmount, $currency),
                 ReservationStatus::PENDING_PAYMENT,
                 new DateTimeImmutable('+15 minutes'), // Payment window
-                new DateTimeImmutable()
+                new DateTimeImmutable
             );
 
             $this->seasonTicketRepository->save($seasonTicket);
