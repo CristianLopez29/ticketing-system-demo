@@ -1,8 +1,10 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing;
 
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Src\Ticketing\Domain\Ports\PaymentGateway;
 use Src\Ticketing\Domain\Repositories\EventRepository;
@@ -12,6 +14,9 @@ use Src\Ticketing\Domain\Repositories\SeasonTicketRepository;
 use Src\Ticketing\Domain\Repositories\StockManager;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
 use Src\Ticketing\Infrastructure\Console\Commands\CleanupExpiredReservations;
+use Src\Ticketing\Infrastructure\Controllers\EventController;
+use Src\Ticketing\Infrastructure\Controllers\PurchaseSeasonTicketController;
+use Src\Ticketing\Infrastructure\Controllers\PurchaseTicketController;
 use Src\Ticketing\Infrastructure\Payment\FakePaymentGateway;
 use Src\Ticketing\Infrastructure\Persistence\EloquentEventRepository;
 use Src\Ticketing\Infrastructure\Persistence\EloquentReservationRepository;
@@ -19,10 +24,6 @@ use Src\Ticketing\Infrastructure\Persistence\EloquentSeasonRepository;
 use Src\Ticketing\Infrastructure\Persistence\EloquentSeasonTicketRepository;
 use Src\Ticketing\Infrastructure\Persistence\EloquentTicketRepository;
 use Src\Ticketing\Infrastructure\Persistence\RedisStockManager;
-use Illuminate\Support\Facades\Route;
-use Src\Ticketing\Infrastructure\Controllers\PurchaseTicketController;
-use Src\Ticketing\Infrastructure\Controllers\PurchaseSeasonTicketController;
-use Src\Ticketing\Infrastructure\Controllers\EventController;
 
 class Bindings extends ServiceProvider
 {

@@ -1,10 +1,10 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing\Infrastructure\Controllers;
 
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -14,7 +14,7 @@ class ReservationController
     {
         $reservation = DB::table('reservations')->where('id', $id)->first();
 
-        if (!$reservation) {
+        if (! $reservation) {
             return new JsonResponse(['error' => 'Reservation not found'], Response::HTTP_NOT_FOUND);
         }
 

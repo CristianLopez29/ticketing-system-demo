@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing\Infrastructure\Persistence;
@@ -9,7 +10,7 @@ use Src\Ticketing\Domain\Repositories\StockManager;
 
 class RedisStockManager implements StockManager
 {
-    private const SCRIPT = <<<LUA
+    private const SCRIPT = <<<'LUA'
         local stock = redis.call('GET', KEYS[1])
         if (not stock or tonumber(stock) <= 0) then
             return 0
@@ -31,7 +32,7 @@ class RedisStockManager implements StockManager
         $key = "event:{$eventId}:stock";
 
         // Re-hydrate from DB if key is absent (Redis restart / key eviction)
-        if (!Redis::exists($key)) {
+        if (! Redis::exists($key)) {
             $lockKey = "lock:rehydrate:{$eventId}";
             // Only one worker re-hydrates; others wait for the key to appear
             if (Redis::set($lockKey, 1, 'EX', 5, 'NX')) {
@@ -42,7 +43,7 @@ class RedisStockManager implements StockManager
                 }
             } else {
                 $maxAttempts = 10;
-                for ($i = 0; $i < $maxAttempts && !Redis::exists($key); $i++) {
+                for ($i = 0; $i < $maxAttempts && ! Redis::exists($key); $i++) {
                     usleep(30_000);
                 }
             }

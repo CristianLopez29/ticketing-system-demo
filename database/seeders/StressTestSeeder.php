@@ -21,7 +21,7 @@ class StressTestSeeder extends Seeder
 
         // Clear only ticketing-related Redis keys (preserve sessions, cache, queues)
         $keys = Redis::keys('event:*:stock');
-        if (!empty($keys)) {
+        if (! empty($keys)) {
             Redis::del(...$keys);
         }
 

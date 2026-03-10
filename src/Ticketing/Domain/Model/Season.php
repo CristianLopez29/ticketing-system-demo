@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing\Domain\Model;
@@ -58,6 +59,7 @@ class Season extends AggregateRoot
         if ($this->renewalStartDate === null || $this->renewalEndDate === null) {
             return false;
         }
+
         return $now >= $this->renewalStartDate && $now <= $this->renewalEndDate;
     }
 }

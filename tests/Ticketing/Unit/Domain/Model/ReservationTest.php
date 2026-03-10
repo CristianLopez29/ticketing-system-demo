@@ -3,12 +3,11 @@
 namespace Tests\Ticketing\Unit\Domain\Model;
 
 use PHPUnit\Framework\TestCase;
-use Src\Ticketing\Domain\Model\Reservation;
-use Src\Ticketing\Domain\ValueObjects\SeatId;
-use Src\Ticketing\Domain\ValueObjects\Money;
-use Src\Ticketing\Domain\Enums\ReservationStatus;
-use DateTimeImmutable;
 use RuntimeException;
+use Src\Ticketing\Domain\Enums\ReservationStatus;
+use Src\Ticketing\Domain\Model\Reservation;
+use Src\Ticketing\Domain\ValueObjects\Money;
+use Src\Ticketing\Domain\ValueObjects\SeatId;
 
 class ReservationTest extends TestCase
 {
@@ -34,9 +33,9 @@ class ReservationTest extends TestCase
     public function test_it_can_be_marked_as_paid(): void
     {
         $reservation = $this->createReservation();
-        
+
         $reservation->markAsPaid();
-        
+
         $this->assertEquals(ReservationStatus::PAID, $reservation->status());
     }
 
@@ -45,10 +44,10 @@ class ReservationTest extends TestCase
         $reservation = $this->createReservation(-5); // Expired 5 mins ago
 
         $this->assertTrue($reservation->isExpired());
-        
+
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Reservation has expired.');
-        
+
         $reservation->markAsPaid();
     }
 
@@ -56,19 +55,19 @@ class ReservationTest extends TestCase
     {
         $reservation = $this->createReservation();
         $reservation->markAsPaid();
-        
+
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Cannot pay for a reservation that is not pending.');
-        
+
         $reservation->markAsPaid();
     }
 
     public function test_it_can_be_cancelled(): void
     {
         $reservation = $this->createReservation();
-        
+
         $reservation->cancel();
-        
+
         $this->assertEquals(ReservationStatus::CANCELLED, $reservation->status());
     }
 
@@ -76,10 +75,10 @@ class ReservationTest extends TestCase
     {
         $reservation = $this->createReservation();
         $reservation->markAsPaid();
-        
+
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Cannot cancel a paid reservation.');
-        
+
         $reservation->cancel();
     }
 }

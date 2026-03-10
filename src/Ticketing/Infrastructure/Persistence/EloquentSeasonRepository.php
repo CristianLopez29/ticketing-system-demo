@@ -1,21 +1,23 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing\Infrastructure\Persistence;
 
+use DateTimeImmutable;
+use Illuminate\Support\Facades\DB;
 use Src\Ticketing\Domain\Model\Season;
 use Src\Ticketing\Domain\Repositories\SeasonRepository;
-use Illuminate\Support\Facades\DB;
-use DateTimeImmutable;
 
 class EloquentSeasonRepository implements SeasonRepository
 {
     public function find(int $id): ?Season
     {
         $record = DB::table('seasons')->find($id);
-        if (!$record) {
+        if (! $record) {
             return null;
         }
+
         return $this->mapToSeason($record);
     }
 
@@ -26,6 +28,7 @@ class EloquentSeasonRepository implements SeasonRepository
         foreach ($records as $record) {
             $seasons[] = $this->mapToSeason($record);
         }
+
         return $seasons;
     }
 

@@ -34,7 +34,7 @@ return new class extends Migration
             $table->string('status'); // pending_payment, paid, cancelled, renewed
             $table->timestamp('expires_at')->nullable(); // For payment deadline
             $table->timestamps();
-            
+
             // Ensure unique seat per season
             $table->unique(['season_id', 'row', 'number']);
         });

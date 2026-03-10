@@ -1,13 +1,12 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing\Infrastructure\Controllers;
 
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
-use Symfony\Component\HttpFoundation\Response;
 
 class EventController
 {
@@ -64,7 +63,7 @@ class EventController
             'available_stock_redis' => (int) $redisStock,
             'tickets_issued' => $ticketsIssued,
             'reservations_pending' => $reservationsPending,
-            'integrity_check' => ($dbSold + (int)$redisStock) === $totalSeats ? 'OK' : 'MISMATCH',
+            'integrity_check' => ($dbSold + (int) $redisStock) === $totalSeats ? 'OK' : 'MISMATCH',
         ]);
     }
 }

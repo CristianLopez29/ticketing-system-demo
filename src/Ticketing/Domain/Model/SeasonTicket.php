@@ -1,12 +1,13 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Src\Ticketing\Domain\Model;
 
 use DateTimeImmutable;
 use Src\Shared\Domain\AggregateRoot;
-use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
+use Src\Ticketing\Domain\ValueObjects\Money;
 
 class SeasonTicket extends AggregateRoot
 {
