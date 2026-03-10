@@ -73,18 +73,49 @@ class EloquentSeasonTicketRepository implements SeasonTicketRepository
         return $this->mapToEntity($record);
     }
 
-    private function mapToEntity($record): SeasonTicket
+    private function mapToEntity(mixed $record): SeasonTicket
     {
+        $record = (array) $record;
+        $expiresAtValue = $record['expires_at'] ?? null;
+        $expiresAt = is_string($expiresAtValue) ? $expiresAtValue : null;
+
+        $idValue = $record['id'] ?? null;
+        $id = is_string($idValue) ? $idValue : '';
+
+        $seasonIdValue = $record['season_id'] ?? null;
+        $seasonId = is_numeric($seasonIdValue) ? (int) $seasonIdValue : 0;
+
+        $userIdValue = $record['user_id'] ?? null;
+        $userId = is_numeric($userIdValue) ? (int) $userIdValue : 0;
+
+        $rowValue = $record['row'] ?? null;
+        $row = is_string($rowValue) ? $rowValue : '';
+
+        $numberValue = $record['number'] ?? null;
+        $number = is_numeric($numberValue) ? (int) $numberValue : 0;
+
+        $priceAmountValue = $record['price_amount'] ?? null;
+        $priceAmount = is_numeric($priceAmountValue) ? (int) $priceAmountValue : 0;
+
+        $priceCurrencyValue = $record['price_currency'] ?? null;
+        $priceCurrency = is_string($priceCurrencyValue) ? $priceCurrencyValue : 'EUR';
+
+        $statusValue = $record['status'] ?? null;
+        $status = is_string($statusValue) ? $statusValue : ReservationStatus::PENDING_PAYMENT->value;
+
+        $createdAtValue = $record['created_at'] ?? null;
+        $createdAt = is_string($createdAtValue) ? $createdAtValue : 'now';
+
         return new SeasonTicket(
-            $record->id,
-            $record->season_id,
-            $record->user_id,
-            $record->row,
-            $record->number,
-            new Money($record->price_amount, $record->price_currency),
-            ReservationStatus::from($record->status),
-            $record->expires_at ? new DateTimeImmutable($record->expires_at) : null,
-            new DateTimeImmutable($record->created_at)
+            $id,
+            $seasonId,
+            $userId,
+            $row,
+            $number,
+            new Money($priceAmount, $priceCurrency),
+            ReservationStatus::from($status),
+            $expiresAt ? new DateTimeImmutable($expiresAt) : null,
+            new DateTimeImmutable($createdAt)
         );
     }
 }

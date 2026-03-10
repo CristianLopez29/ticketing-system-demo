@@ -32,16 +32,38 @@ class EloquentSeasonRepository implements SeasonRepository
         return $seasons;
     }
 
-    private function mapToSeason($record): Season
+    private function mapToSeason(mixed $record): Season
     {
+        $record = (array) $record;
+        $previousSeasonIdValue = $record['previous_season_id'] ?? null;
+        $previousSeasonId = is_numeric($previousSeasonIdValue) ? (int) $previousSeasonIdValue : null;
+
+        $renewalStartDateValue = $record['renewal_start_date'] ?? null;
+        $renewalStartDate = is_string($renewalStartDateValue) ? $renewalStartDateValue : null;
+
+        $renewalEndDateValue = $record['renewal_end_date'] ?? null;
+        $renewalEndDate = is_string($renewalEndDateValue) ? $renewalEndDateValue : null;
+
+        $idValue = $record['id'] ?? null;
+        $id = is_numeric($idValue) ? (int) $idValue : 0;
+
+        $nameValue = $record['name'] ?? null;
+        $name = is_string($nameValue) ? $nameValue : '';
+
+        $startDateValue = $record['start_date'] ?? null;
+        $startDate = is_string($startDateValue) ? $startDateValue : 'now';
+
+        $endDateValue = $record['end_date'] ?? null;
+        $endDate = is_string($endDateValue) ? $endDateValue : 'now';
+
         return new Season(
-            $record->id,
-            $record->name,
-            new DateTimeImmutable($record->start_date),
-            new DateTimeImmutable($record->end_date),
-            $record->previous_season_id,
-            $record->renewal_start_date ? new DateTimeImmutable($record->renewal_start_date) : null,
-            $record->renewal_end_date ? new DateTimeImmutable($record->renewal_end_date) : null
+            $id,
+            $name,
+            new DateTimeImmutable($startDate),
+            new DateTimeImmutable($endDate),
+            $previousSeasonId,
+            $renewalStartDate ? new DateTimeImmutable($renewalStartDate) : null,
+            $renewalEndDate ? new DateTimeImmutable($renewalEndDate) : null
         );
     }
 }

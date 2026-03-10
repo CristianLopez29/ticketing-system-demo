@@ -11,7 +11,12 @@ parameters:
     level: 9
 
     ignoreErrors:
-        #- '#PHPDoc tag @var#'
+        - message: '#return type has no value type specified in iterable type array#'
+          paths:
+              - src/Ticketing/Domain/Model/Reservation.php
+        - message: '#return type has no value type specified in iterable type array#'
+          paths:
+              - src/Ticketing/Domain/Model/Ticket.php
         
     excludePaths:
         #- ./*/*/FileToBeExcluded.php

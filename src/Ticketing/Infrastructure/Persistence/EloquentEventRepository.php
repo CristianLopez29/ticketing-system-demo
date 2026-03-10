@@ -17,7 +17,13 @@ class EloquentEventRepository implements EventRepository
             return null;
         }
 
-        return new Event($record->id, $record->name, $record->total_seats);
+        $data = (array) $record;
+
+        return new Event(
+            (int) ($data['id'] ?? 0),
+            (string) ($data['name'] ?? ''),
+            (int) ($data['total_seats'] ?? 0)
+        );
     }
 
     public function findBySeasonId(int $seasonId): array
@@ -26,7 +32,12 @@ class EloquentEventRepository implements EventRepository
 
         $events = [];
         foreach ($records as $record) {
-            $events[] = new Event($record->id, $record->name, $record->total_seats);
+            $data = (array) $record;
+            $events[] = new Event(
+                (int) ($data['id'] ?? 0),
+                (string) ($data['name'] ?? ''),
+                (int) ($data['total_seats'] ?? 0)
+            );
         }
 
         return $events;

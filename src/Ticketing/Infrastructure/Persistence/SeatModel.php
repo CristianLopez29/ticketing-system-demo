@@ -16,7 +16,7 @@ class SeatModel extends Model
         'event_id', 'row', 'number', 'price_amount', 'price_currency', 'reserved_by_user_id',
     ];
 
-    protected static function newFactory()
+    protected static function newFactory(): SeatModelFactory
     {
         return SeatModelFactory::new();
     }

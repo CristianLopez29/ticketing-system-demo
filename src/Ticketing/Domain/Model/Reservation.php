@@ -80,7 +80,7 @@ class Reservation extends AggregateRoot
 
     public function isExpired(): bool
     {
-        return new DateTimeImmutable > $this->expiresAt;
+        return (new DateTimeImmutable) > $this->expiresAt;
     }
 
     /**
