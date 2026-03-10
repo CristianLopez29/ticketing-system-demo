@@ -48,17 +48,12 @@ class CleanupExpiredReservations extends Command
                         return false;
                     }
 
-                    $updated = DB::table('reservations')
-                        ->where('id', $lockedReservation->id())
-                        ->where('status', ReservationStatus::PENDING_PAYMENT->value)
-                        ->update([
-                            'status' => ReservationStatus::CANCELLED->value,
-                            'updated_at' => now(),
-                        ]);
-
-                    if ($updated !== 1) {
+                    if ($lockedReservation->status() !== ReservationStatus::PENDING_PAYMENT) {
                         return false;
                     }
+
+                    $lockedReservation->cancel();
+                    $reservationRepository->save($lockedReservation);
 
                     // Release seat allocation
                     // Verify ownership before release
