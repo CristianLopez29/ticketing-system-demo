@@ -41,8 +41,10 @@ class RedisStockManager implements StockManager
                     Redis::del($lockKey);
                 }
             } else {
-                // Another worker is re-hydrating; wait briefly for the key
-                usleep(50000); // 50ms
+                $maxAttempts = 10;
+                for ($i = 0; $i < $maxAttempts && !Redis::exists($key); $i++) {
+                    usleep(30_000);
+                }
             }
         }
 

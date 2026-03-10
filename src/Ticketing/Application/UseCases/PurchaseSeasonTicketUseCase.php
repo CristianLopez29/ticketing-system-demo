@@ -8,6 +8,7 @@ use Src\Ticketing\Domain\Repositories\SeasonRepository;
 use Src\Ticketing\Domain\Repositories\EventRepository;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
 use Src\Ticketing\Domain\Repositories\SeasonTicketRepository;
+use Src\Ticketing\Domain\Repositories\StockManager;
 use Src\Ticketing\Domain\Model\SeasonTicket;
 use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
@@ -24,7 +25,8 @@ class PurchaseSeasonTicketUseCase
         private readonly SeasonRepository $seasonRepository,
         private readonly EventRepository $eventRepository,
         private readonly TicketRepository $ticketRepository,
-        private readonly SeasonTicketRepository $seasonTicketRepository
+        private readonly SeasonTicketRepository $seasonTicketRepository,
+        private readonly StockManager $stockManager
     ) {}
 
     public function execute(PurchaseSeasonTicketRequestDTO $request): SeasonTicket
@@ -96,11 +98,8 @@ class PurchaseSeasonTicketUseCase
                 $seatsToReserve[] = $seat;
             }
 
-            // 5. Create Season Ticket
-            // Apply a discount? For now, sum of all ticket prices.
-            // Usually Season Tickets have a fixed price, but let's sum it up or use a season price if we had one.
-            // For this MVP, let's say 20% discount on total.
-            $discountedAmount = (int) ($totalAmount * 0.8);
+            $discountPercent = config('ticketing.season_ticket_discount', 20);
+            $discountedAmount = (int) ($totalAmount * (1 - $discountPercent / 100));
 
             $seasonTicket = new SeasonTicket(
                 (string) Str::uuid(),
@@ -116,10 +115,10 @@ class PurchaseSeasonTicketUseCase
 
             $this->seasonTicketRepository->save($seasonTicket);
 
-            // 6. Reserve individual seats
             foreach ($seatsToReserve as $seat) {
                 $seat->reserve($request->userId);
                 $this->ticketRepository->save($seat);
+                $this->stockManager->attemptToReserve($seat->eventId());
             }
 
             return $seasonTicket;

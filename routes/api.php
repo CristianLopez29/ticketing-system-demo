@@ -1,20 +1,21 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Http\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ReportsController;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
+use Symfony\Component\HttpFoundation\Response;
 
 Route::get('/health', function () {
     if (app()->environment('production')) {
         $token = request()->header('X-Health-Check-Token');
-        if (!is_string($token) || $token !== env('HEALTHCHECK_TOKEN')) {
+        if (! is_string($token) || $token !== config('ticketing.healthcheck_token')) {
             abort(403);
         }
     }
+
     return new JsonResponse([
         'status' => 'ok',
         'time' => now()->toISOString(),
@@ -24,7 +25,7 @@ Route::get('/health', function () {
 Route::get('/readiness', function () {
     if (app()->environment('production')) {
         $token = request()->header('X-Health-Check-Token');
-        if (!is_string($token) || $token !== env('HEALTHCHECK_TOKEN')) {
+        if (! is_string($token) || $token !== config('ticketing.healthcheck_token')) {
             abort(403);
         }
     }
