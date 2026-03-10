@@ -2,10 +2,10 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,9 +27,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Ticketing event listeners can be added here
-        
+
         RateLimiter::for('login', function (Request $request) {
-            $email = (string) $request->input('email');
+            $emailInput = $request->input('email');
+            $email = is_string($emailInput) ? $emailInput : '';
+
             return [
                 Limit::perMinute(5)->by($email.$request->ip()),
                 Limit::perMinute(30)->by($request->ip()),
