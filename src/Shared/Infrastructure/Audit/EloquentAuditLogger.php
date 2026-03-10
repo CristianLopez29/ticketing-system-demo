@@ -23,7 +23,7 @@ class EloquentAuditLogger implements AuditLogger
         Log::info($action, [
             'entity_type' => $entityType,
             'entity_id' => $entityId,
-            'payload' => $payload
+            'payload' => $payload,
         ]);
     }
 }
