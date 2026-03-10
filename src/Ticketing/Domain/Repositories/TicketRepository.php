@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Src\Ticketing\Domain\Repositories;
 
-use Src\Ticketing\Domain\Seat;
+use Src\Ticketing\Domain\Model\Seat;
 use Src\Ticketing\Domain\Model\Ticket;
 use Src\Ticketing\Domain\ValueObjects\SeatId;
 
