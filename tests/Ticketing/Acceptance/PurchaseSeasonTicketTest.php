@@ -2,8 +2,10 @@
 
 namespace Tests\Ticketing\Acceptance;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 use Tests\TestCase;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
 use DateTimeImmutable;
@@ -21,6 +23,10 @@ class PurchaseSeasonTicketTest extends TestCase
     public function test_successfully_purchases_season_ticket_and_reserves_all_seats(): void
     {
         // 1. Arrange
+        // Create User
+        $user = User::factory()->create();
+        $userId = $user->id;
+
         // Create a Season
         $seasonId = DB::table('seasons')->insertGetId([
             'name' => '2026 Season',
@@ -71,7 +77,8 @@ class PurchaseSeasonTicketTest extends TestCase
             ]
         ]);
 
-        $userId = 123;
+        Redis::set("event:{$event1Id}:stock", 100);
+        Redis::set("event:{$event2Id}:stock", 100);
 
         // 2. Act
         $response = $this->postJson('/api/season-tickets/purchase', [
@@ -139,7 +146,10 @@ class PurchaseSeasonTicketTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $otherUserId = 999;
+        $user1 = User::factory()->create();
+        $user2 = User::factory()->create();
+        $otherUserId = $user1->id;
+        $userId = $user2->id;
         
         DB::table('seats')->insert([
             [
@@ -164,7 +174,8 @@ class PurchaseSeasonTicketTest extends TestCase
             ]
         ]);
 
-        $userId = 123;
+        Redis::set("event:{$event1Id}:stock", 100);
+        Redis::set("event:{$event2Id}:stock", 100);
 
         // 2. Act
         $response = $this->postJson('/api/season-tickets/purchase', [
@@ -174,6 +185,10 @@ class PurchaseSeasonTicketTest extends TestCase
             'number' => 1,
             'idempotency_key' => 'uuid-failure'
         ]);
+
+        if ($response->status() !== 409) {
+            fwrite(STDERR, "PurchaseSeasonTicketTest Failure (409): " . $response->content() . "\n");
+        }
 
         // 3. Assert
         $response->assertStatus(409); // Conflict
@@ -207,7 +222,9 @@ class PurchaseSeasonTicketTest extends TestCase
         ]);
 
         // Previous Owner
-        $ownerUserId = 888;
+        $ownerUser = User::factory()->create();
+        $ownerUserId = $ownerUser->id;
+        
         DB::table('season_tickets')->insert([
             'id' => 'old-ticket-id',
             'season_id' => $prevSeasonId,
@@ -253,7 +270,10 @@ class PurchaseSeasonTicketTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $newUserId = 123; // NOT the owner
+        Redis::set("event:{$event1Id}:stock", 100);
+
+        $newUser = User::factory()->create();
+        $newUserId = $newUser->id; // NOT the owner
 
         // 2. Act
         $response = $this->postJson('/api/season-tickets/purchase', [
@@ -282,9 +302,11 @@ class PurchaseSeasonTicketTest extends TestCase
         ]);
 
         // Previous Owner
-        $ownerUserId = 888;
+        $ownerUser = User::factory()->create();
+        $ownerUserId = $ownerUser->id;
+        
         DB::table('season_tickets')->insert([
-            'id' => 'old-ticket-id',
+            'id' => 'old-ticket-id-2',
             'season_id' => $prevSeasonId,
             'user_id' => $ownerUserId,
             'row' => 'A',
@@ -328,6 +350,8 @@ class PurchaseSeasonTicketTest extends TestCase
             'updated_at' => now(),
         ]);
 
+        Redis::set("event:{$event1Id}:stock", 100);
+
         // 2. Act
         $response = $this->postJson('/api/season-tickets/purchase', [
             'season_id' => $seasonId,
@@ -336,6 +360,10 @@ class PurchaseSeasonTicketTest extends TestCase
             'number' => 1,
             'idempotency_key' => 'uuid-renewal-success'
         ]);
+
+        if ($response->status() !== 201) {
+            fwrite(STDERR, "PurchaseSeasonTicketTest Failure (Renewal 201): " . $response->content() . "\n");
+        }
 
         // 3. Assert
         $response->assertStatus(201);

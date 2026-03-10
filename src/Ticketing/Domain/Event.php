@@ -17,4 +17,19 @@ class Event extends AggregateRoot
         $this->name = $name;
         $this->totalSeats = $totalSeats;
     }
+
+    public function id(): int
+    {
+        return $this->id;
+    }
+
+    public function name(): string
+    {
+        return $this->name;
+    }
+
+    public function totalSeats(): int
+    {
+        return $this->totalSeats;
+    }
 }

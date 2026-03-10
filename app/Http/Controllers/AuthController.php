@@ -108,10 +108,14 @@ class AuthController extends Controller
     public function refresh(Request $request): JsonResponse
     {
         $user = $request->user();
-        $current = $user?->currentAccessToken();
-        if ($user === null || $current === null) {
-            return new JsonResponse(['message' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
+        if (!$user) {
+            return new JsonResponse(['message' => 'Unauthorized (No User)'], Response::HTTP_UNAUTHORIZED);
         }
+        $current = $user->currentAccessToken();
+        if (!$current) {
+             return new JsonResponse(['message' => 'Unauthorized (No Token)'], Response::HTTP_UNAUTHORIZED);
+        }
+
         $newToken = $user->createToken('api')->plainTextToken;
         $current->delete();
         return new JsonResponse([
