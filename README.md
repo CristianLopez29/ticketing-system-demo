@@ -1,6 +1,6 @@
 # Ticketing System (High Concurrency & Stress Testing)
 
-## 🧠 AI Role & Project Goal
+## 🎯 Project Goal
 This project is a high-concurrency ticketing system designed to handle massive traffic spikes (e.g., "Sold Out" scenarios).
 The main goal is to ensure **Data Consistency** and **Integrity** under extreme load (1,000 concurrent users).
 
@@ -12,7 +12,7 @@ The main goal is to ensure **Data Consistency** and **Integrity** under extreme 
 - **Database:** MySQL 8.0 (InnoDB, READ COMMITTED).
 - **Cache/Locking:** Redis (Atomic operations, Lua scripts, Distributed Locks).
 - **Testing:**
-    - **Unit/Feature:** PHPUnit / Pest (Strict TDD).
+    - **Unit/Feature:** PHPUnit (Strict TDD).
     - **Load/Stress:** k6 (JavaScript).
 
 ## 🏗 Architecture (Hexagonal + DDD)
@@ -39,10 +39,11 @@ src/
     │   └── DTOs/            # Data Transfer Objects
     │
     └── Infrastructure/      # Framework & I/O (Adapters)
-        ├── Persistence/     # Eloquent & Redis Implementations
-        ├── Http/            # Controllers
-        ├── Console/         # Commands (CleanupExpiredReservations)
-        └── Jobs/            # Async Jobs (ProcessTicketPayment)
+        ├── Controllers/     # HTTP Controllers
+        ├── Console/         # Artisan commands
+        ├── Jobs/            # Async Jobs (ProcessTicketPayment)
+        ├── Payment/         # Payment adapters (Stripe, Fake)
+        └── Persistence/     # Eloquent & Redis Implementations
 ```
 
 ### Dependency Rules
@@ -82,13 +83,13 @@ src/
 ### 1. Unit & Feature Tests
 We achieve high coverage in the Domain layer and test the full purchase flow via Feature tests.
 
-**Run Tests (Docker):**
+**Run Tests:**
 ```bash
 # Run all tests
-docker exec ticketing-laravel-1 php artisan test
+./vendor/bin/sail test
 
 # Run only Ticketing tests
-docker exec ticketing-laravel-1 php artisan test tests/Ticketing
+./vendor/bin/sail artisan test tests/Ticketing
 ```
 
 ### 2. Stress Testing (k6)
@@ -105,20 +106,25 @@ We verify system resilience with **k6**. The scenario simulates 1,000 concurrent
 - Remaining requests fail with `409 Conflict` or `422 Unprocessable Entity` (Expected).
 - **ZERO** `500 Internal Server Error`.
 
-**Run Stress Test (Docker):**
+**Prepare Data:**
+```bash
+./vendor/bin/sail artisan db:seed --class=StressTestSeeder
+```
+
+**Run Stress Test:**
 
 If you have k6 installed locally:
 ```bash
-k6 run tests/Load/k6/purchase_stress_test.js
+BASE_URL=http://localhost k6 run tests/Load/k6/purchase_stress_test.js
 ```
 
 If you want to run k6 via Docker (recommended):
 ```bash
-# Linux
-docker run --rm -i --network host grafana/k6 run - < tests/Load/k6/purchase_stress_test.js
-
-# Windows / Mac (accessing host via host.docker.internal)
+# Linux / Mac / Git Bash (accessing host via host.docker.internal)
 docker run --rm -i -e BASE_URL=http://host.docker.internal grafana/k6 run - < tests/Load/k6/purchase_stress_test.js
+
+# Windows PowerShell
+Get-Content tests/Load/k6/purchase_stress_test.js | docker run --rm -i -e BASE_URL=http://host.docker.internal grafana/k6 run -
 ```
 
 ## 🚀 Getting Started
@@ -131,20 +137,28 @@ docker run --rm -i -e BASE_URL=http://host.docker.internal grafana/k6 run - < te
    ```bash
    ./vendor/bin/sail up -d
    ```
-   Or directly with docker-compose:
+   Or directly with Docker Compose:
    ```bash
    docker compose up -d
    ```
 
-2. Run migrations (and seed if necessary):
+2. Generate app key (first run only):
    ```bash
-   docker exec ticketing-laravel-1 php artisan migrate
+   ./vendor/bin/sail artisan key:generate
    ```
 
-3. (Optional) Access the shell:
+3. Run migrations:
    ```bash
-   docker exec -it ticketing-laravel-1 bash
+   ./vendor/bin/sail artisan migrate
    ```
 
-4. View API Documentation:
-   Visit `/api/documentation` (if enabled via L5-Swagger).
+4. (Optional) Access the shell:
+   ```bash
+   ./vendor/bin/sail shell
+   ```
+
+5. View API Documentation:
+   Visit `/api/documentation` (requires L5-Swagger generation if not already generated).
+   ```bash
+   ./vendor/bin/sail artisan l5-swagger:generate
+   ```
