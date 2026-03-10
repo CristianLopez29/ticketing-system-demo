@@ -7,6 +7,8 @@ The main goal is to ensure **Data Consistency** and **Integrity** under extreme 
 ## 🛠 Tech Stack
 - **Language:** PHP 8.4 (Strict Types, Readonly classes, Enums).
 - **Framework:** Laravel 12 (Used as 'glue code' and delivery mechanism only).
+- **Documentation:** L5-Swagger / OpenAPI.
+- **Monitoring:** Sentry (Error Tracking).
 - **Database:** MySQL 8.0 (InnoDB, READ COMMITTED).
 - **Cache/Locking:** Redis (Atomic operations, Lua scripts, Distributed Locks).
 - **Testing:**
@@ -14,26 +16,33 @@ The main goal is to ensure **Data Consistency** and **Integrity** under extreme 
     - **Load/Stress:** k6 (JavaScript).
 
 ## 🏗 Architecture (Hexagonal + DDD)
-The project follows strict Hexagonal Architecture principles.
+The project follows strict Hexagonal Architecture principles (Ports & Adapters).
 
 ### Directory Structure
 ```text
-src/Ticketing/
-├── Domain/              # Pure business logic (Inner Hexagon)
-│   ├── Model/           # Entities (Seat, Event)
-│   ├── ValueObjects/    # Value Objects (Money, SeatId)
-│   ├── Ports/           # Interfaces (TicketRepository, StockManager)
-│   ├── Events/          # Domain Events (TicketSold)
-│   └── Exceptions/      # Domain Exceptions (SeatAlreadySoldException)
+src/
+├── Shared/                  # Shared Kernel (Audit, Base Classes)
+│   ├── Domain/
+│   └── Infrastructure/
 │
-├── Application/         # Application Logic (Coordinating Hexagon)
-│   ├── UseCases/        # Command Handlers (PurchaseTicketUseCase)
-│   └── DTOs/            # Data Transfer Objects
-│
-└── Infrastructure/      # Framework & I/O (Adapters)
-    ├── Persistence/     # Eloquent & Redis Implementations
-    ├── Http/            # Controllers
-    └── Console/         # Commands
+└── Ticketing/               # Ticketing Bounded Context
+    ├── Domain/              # Pure business logic (Inner Hexagon)
+    │   ├── Model/           # Entities (Reservation, Season, Ticket)
+    │   ├── ValueObjects/    # Value Objects (Money, SeatId)
+    │   ├── Ports/           # Interfaces (PaymentGateway)
+    │   ├── Repositories/    # Repository Interfaces
+    │   ├── Events/          # Domain Events (TicketSold)
+    │   ├── Exceptions/      # Domain Exceptions
+    │
+    ├── Application/         # Application Logic (Coordinating Hexagon)
+    │   ├── UseCases/        # Command Handlers (PurchaseTicket, PurchaseSeasonTicket)
+    │   └── DTOs/            # Data Transfer Objects
+    │
+    └── Infrastructure/      # Framework & I/O (Adapters)
+        ├── Persistence/     # Eloquent & Redis Implementations
+        ├── Http/            # Controllers
+        ├── Console/         # Commands (CleanupExpiredReservations)
+        └── Jobs/            # Async Jobs (ProcessTicketPayment)
 ```
 
 ### Dependency Rules
@@ -41,21 +50,37 @@ src/Ticketing/
 2. **Application** depends ONLY on Domain.
 3. **Infrastructure** depends on Application and Domain.
 
-## ⚡ Technical Challenges & Coding Rules
+## ⚡ Key Features & Implementation Details
 
-### 1. Concurrency Handling (CRITICAL)
-- **Redis Atomic Locks:** First line of defense. Checks and decrements stock atomically using Lua scripts.
+### 1. High Concurrency Purchase (Single Ticket)
+- **Redis Atomic Locks:** First line of defense. Checks and decrements stock atomically using Lua scripts (`RedisStockManager`).
 - **DB Transaction & Pessimistic Locking:** `SELECT ... FOR UPDATE` ensures row-level locking in MySQL.
 - **Idempotency:** `Idempotency-Key` header support to prevent double charges.
+- **Flow:**
+    1. **Request:** `POST /api/tickets/purchase`
+    2. **Redis Check:** Fail fast if sold out.
+    3. **DB Lock:** Lock seat row.
+    4. **Domain Guard:** `$seat->reserve($user)`.
+    5. **Commit:** Save and dispatch event.
 
-### 2. Domain Validations
-- Business rules are enforced in Domain Entities and Value Objects, not in Controllers.
-- Example: `Seat` ensures it cannot be reserved if already sold.
+### 2. Season Tickets (Complex Logic)
+- **Renewal Logic:** Supports priority windows where previous season owners have exclusive rights to their seats.
+- **Atomic Batch Reservation:** Reserves the same seat across ALL events in a season within a single database transaction.
+- **Consistency:** If one event's seat is unavailable, the entire season ticket purchase fails.
+
+### 3. Reservations & Expiration
+- **Two-Step Process:** Reserve -> Pay.
+- **Status:** `PENDING_PAYMENT` -> `PAID`.
+- **Expiration:** Reservations have a TTL (default 5 mins).
+- **Cleanup:** `CleanupExpiredReservations` command releases expired seats.
+
+### 4. Audit Logging
+- **Shared Kernel:** Centralized `AuditLogger` in `src/Shared` tracks critical actions across the system.
 
 ## 🧪 Testing Strategy
 
 ### 1. Unit & Feature Tests
-We achieve 100% coverage in the Domain layer and test the full purchase flow via Feature tests.
+We achieve high coverage in the Domain layer and test the full purchase flow via Feature tests.
 
 **Run Tests (Docker):**
 ```bash
@@ -121,20 +146,5 @@ docker run --rm -i -e BASE_URL=http://host.docker.internal grafana/k6 run - < te
    docker exec -it ticketing-laravel-1 bash
    ```
 
-## 📝 Implementation Details
-
-### Purchase Flow
-1. **Request:** `POST /api/tickets/purchase` with `Idempotency-Key`.
-2. **Idempotency Check:** Redis checks if key exists.
-3. **Stock Check (Redis):** Atomic decrement of stock. Fails fast if sold out.
-4. **DB Transaction:**
-   - Lock Row: `SELECT ... FOR UPDATE` on `seats` table.
-   - Domain Guard: `$seat->reserve($user)`.
-   - Save: Commit transaction.
-   - Event: Dispatch `TicketSold`.
-5. **Failure Compensation:** If DB fails, revert Redis stock decrement.
-
-### Key Files
-- `src/Ticketing/Domain/Model/Seat.php`: Aggregate Root with business logic.
-- `src/Ticketing/Application/UseCases/PurchaseTicketUseCase.php`: Orchestrator.
-- `src/Ticketing/Infrastructure/Persistence/RedisStockManager.php`: Lua script for atomic stock.
+4. View API Documentation:
+   Visit `/api/documentation` (if enabled via L5-Swagger).
