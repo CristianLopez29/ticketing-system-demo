@@ -65,7 +65,8 @@ class ReservationCleanupTest extends TestCase
         $pending
             ->expectsOutput('Found 1 expired reservations. Processing...')
             ->expectsOutput("Cleaned up reservation: {$reservationId}")
-            ->assertExitCode(0);
+            ->assertExitCode(0)
+            ->run();
 
         // 3. Verify
 
