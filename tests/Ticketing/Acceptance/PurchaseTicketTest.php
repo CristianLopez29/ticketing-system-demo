@@ -7,6 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Redis;
+use Laravel\Sanctum\Sanctum;
 use Src\Ticketing\Domain\Events\TicketSold;
 use Src\Ticketing\Domain\Ports\PaymentGateway;
 use Src\Ticketing\Domain\ValueObjects\Money;
@@ -31,6 +32,7 @@ class PurchaseTicketTest extends TestCase
         Bus::fake();
 
         $user = User::factory()->create(['id' => 999]);
+        Sanctum::actingAs($user);
 
         $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
         $seat = SeatModel::create([
@@ -47,7 +49,6 @@ class PurchaseTicketTest extends TestCase
         $response = $this->postJson('/api/tickets/purchase', [
             'event_id' => $event->id,
             'seat_id' => $seat->id,
-            'user_id' => $user->id
         ], [
             'Idempotency-Key' => 'unique-req-123'
         ]);
@@ -83,6 +84,7 @@ class PurchaseTicketTest extends TestCase
     public function test_fails_when_seat_already_sold(): void
     {
         $user = User::factory()->create(['id' => 999]);
+        Sanctum::actingAs($user);
         
         // Mock Payment Gateway (should not be called, but just in case)
         $this->mock(PaymentGateway::class);
@@ -102,7 +104,6 @@ class PurchaseTicketTest extends TestCase
         $response = $this->postJson('/api/tickets/purchase', [
             'event_id' => $event->id,
             'seat_id' => $seat->id,
-            'user_id' => $user->id
         ], [
             'Idempotency-Key' => 'unique-req-123'
         ]);
@@ -119,6 +120,7 @@ class PurchaseTicketTest extends TestCase
         Bus::fake();
 
         $user = User::factory()->create(['id' => 999]);
+        Sanctum::actingAs($user);
 
         $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
         $seat = SeatModel::create([
@@ -136,14 +138,12 @@ class PurchaseTicketTest extends TestCase
         $this->postJson('/api/tickets/purchase', [
             'event_id' => $event->id,
             'seat_id' => $seat->id,
-            'user_id' => $user->id
         ], ['Idempotency-Key' => 'unique-req-123'])->assertStatus(202);
 
         // Second attempt with exact same key fails
         $response = $this->postJson('/api/tickets/purchase', [
             'event_id' => $event->id,
             'seat_id' => $seat->id,
-            'user_id' => $user->id
         ], ['Idempotency-Key' => 'unique-req-123']);
 
         $response->assertSee('This request has already been processed');

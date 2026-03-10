@@ -34,7 +34,13 @@ class Bindings extends ServiceProvider
         $this->app->bind(EventRepository::class, EloquentEventRepository::class);
         $this->app->bind(ReservationRepository::class, EloquentReservationRepository::class);
         $this->app->bind(StockManager::class, RedisStockManager::class);
-        $this->app->bind(PaymentGateway::class, FakePaymentGateway::class);
+
+        $gatewayDriver = config('ticketing.payment_gateway', 'fake');
+        if ($gatewayDriver === 'stripe') {
+            $this->app->bind(PaymentGateway::class, \Src\Ticketing\Infrastructure\Payment\StripePaymentGateway::class);
+        } else {
+            $this->app->bind(PaymentGateway::class, FakePaymentGateway::class);
+        }
     }
 
     public function boot(): void
@@ -50,14 +56,20 @@ class Bindings extends ServiceProvider
 
     private function registerRoutes(): void
     {
+        // Public routes: read-only event information
         Route::middleware('api')
+            ->prefix('api')
+            ->group(function () {
+                Route::get('/events/{id}/seats', [EventController::class, 'getSeats']);
+                Route::get('/events/{id}/stats', [EventController::class, 'getStats']);
+            });
+
+        // Protected routes: require authenticated user
+        Route::middleware(['api', 'auth:sanctum'])
             ->prefix('api')
             ->group(function () {
                 Route::post('/tickets/purchase', PurchaseTicketController::class);
                 Route::post('/season-tickets/purchase', PurchaseSeasonTicketController::class);
-                
-                Route::get('/events/{id}/seats', [EventController::class, 'getSeats']);
-                Route::get('/events/{id}/stats', [EventController::class, 'getStats']);
             });
     }
 }

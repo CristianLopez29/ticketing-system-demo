@@ -33,14 +33,13 @@ class PurchaseTicketController
         $validated = $request->validate([
             'event_id' => 'required|integer',
             'seat_id'  => 'required|integer',
-            'user_id'  => 'required|integer'
         ]);
 
         try {
             $dto = new PurchaseTicketRequestDTO(
                 (int) $validated['event_id'],
                 new SeatId((int) $validated['seat_id']),
-                (int) $validated['user_id'],
+                (int) $request->user()->id,
                 $idempotencyKey
             );
 

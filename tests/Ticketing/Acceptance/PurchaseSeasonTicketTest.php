@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
 use DateTimeImmutable;
@@ -26,6 +27,7 @@ class PurchaseSeasonTicketTest extends TestCase
         // Create User
         $user = User::factory()->create();
         $userId = $user->id;
+        Sanctum::actingAs($user);
 
         // Create a Season
         $seasonId = DB::table('seasons')->insertGetId([
@@ -83,7 +85,6 @@ class PurchaseSeasonTicketTest extends TestCase
         // 2. Act
         $response = $this->postJson('/api/season-tickets/purchase', [
             'season_id' => $seasonId,
-            'user_id' => $userId,
             'row' => 'A',
             'number' => 1,
             'idempotency_key' => 'uuid-12345'
@@ -150,6 +151,7 @@ class PurchaseSeasonTicketTest extends TestCase
         $user2 = User::factory()->create();
         $otherUserId = $user1->id;
         $userId = $user2->id;
+        Sanctum::actingAs($user2);
         
         DB::table('seats')->insert([
             [
@@ -180,7 +182,6 @@ class PurchaseSeasonTicketTest extends TestCase
         // 2. Act
         $response = $this->postJson('/api/season-tickets/purchase', [
             'season_id' => $seasonId,
-            'user_id' => $userId,
             'row' => 'A',
             'number' => 1,
             'idempotency_key' => 'uuid-failure'
@@ -274,11 +275,11 @@ class PurchaseSeasonTicketTest extends TestCase
 
         $newUser = User::factory()->create();
         $newUserId = $newUser->id; // NOT the owner
+        Sanctum::actingAs($newUser);
 
         // 2. Act
         $response = $this->postJson('/api/season-tickets/purchase', [
             'season_id' => $seasonId,
-            'user_id' => $newUserId,
             'row' => 'A',
             'number' => 1,
             'idempotency_key' => 'uuid-renewal-fail'
@@ -352,10 +353,11 @@ class PurchaseSeasonTicketTest extends TestCase
 
         Redis::set("event:{$event1Id}:stock", 100);
 
+        Sanctum::actingAs($ownerUser);
+
         // 2. Act
         $response = $this->postJson('/api/season-tickets/purchase', [
             'season_id' => $seasonId,
-            'user_id' => $ownerUserId, // IS the owner
             'row' => 'A',
             'number' => 1,
             'idempotency_key' => 'uuid-renewal-success'

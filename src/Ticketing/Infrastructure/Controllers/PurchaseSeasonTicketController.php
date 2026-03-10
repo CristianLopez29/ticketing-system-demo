@@ -18,7 +18,6 @@ class PurchaseSeasonTicketController
     {
         $request->validate([
             'season_id' => 'required|integer',
-            'user_id' => 'required|integer', // In real app, from Auth
             'row' => 'required|string',
             'number' => 'required|integer',
             'idempotency_key' => 'required|string',
@@ -27,7 +26,7 @@ class PurchaseSeasonTicketController
         try {
             $dto = new PurchaseSeasonTicketRequestDTO(
                 (int) $request->input('season_id'),
-                (int) $request->input('user_id'),
+                (int) $request->user()->id,
                 (string) $request->input('row'),
                 (int) $request->input('number'),
                 (string) $request->input('idempotency_key')
