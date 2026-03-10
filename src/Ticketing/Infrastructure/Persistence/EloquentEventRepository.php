@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Src\Ticketing\Infrastructure\Persistence;
 
-use Src\Ticketing\Domain\Event;
+use Src\Ticketing\Domain\Model\Event;
 use Src\Ticketing\Domain\Repositories\EventRepository;
 use Illuminate\Support\Facades\DB;
 

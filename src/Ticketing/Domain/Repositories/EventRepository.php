@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Src\Ticketing\Domain\Repositories;
 
-use Src\Ticketing\Domain\Event;
+use Src\Ticketing\Domain\Model\Event;
 
 interface EventRepository
 {

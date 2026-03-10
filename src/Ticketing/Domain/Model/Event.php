@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Src\Ticketing\Domain;
+namespace Src\Ticketing\Domain\Model;
 
 use Src\Shared\Domain\AggregateRoot;
 
