@@ -15,4 +15,8 @@ return [
     */
     'payment_gateway' => env('PAYMENT_GATEWAY_DRIVER', 'fake'),
 
+    'healthcheck_token' => env('HEALTHCHECK_TOKEN'),
+
+    'season_ticket_discount' => (int) env('SEASON_TICKET_DISCOUNT', 20),
+
 ];

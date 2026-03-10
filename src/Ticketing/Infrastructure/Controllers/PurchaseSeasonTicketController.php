@@ -11,6 +11,7 @@ use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
+use Illuminate\Support\Facades\Log;
 
 class PurchaseSeasonTicketController
 {
@@ -52,7 +53,8 @@ class PurchaseSeasonTicketController
         } catch (RuntimeException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 422);
         } catch (Throwable $e) {
-            return new JsonResponse(['error' => 'Internal Server Error', 'details' => $e->getMessage()], 500);
+            Log::error('Season ticket purchase failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return new JsonResponse(['error' => 'An unexpected error occurred.'], 500);
         }
     }
 }
