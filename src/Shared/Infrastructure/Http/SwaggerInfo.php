@@ -5,8 +5,9 @@ namespace Src\Shared\Infrastructure\Http;
 /**
  * @OA\Info(
  *      version="1.0.0",
- *      title="Manage Applications API",
- *      description="REST API documentation for the Manage Applications & Evaluators backend",
+ *      title="Ticketing API",
+ *      description="REST API documentation for the Ticketing backend",
+ *
  *      @OA\Contact(
  *          email="admin@example.com"
  *      )
@@ -17,6 +18,4 @@ namespace Src\Shared\Infrastructure\Http;
  *      description="Demo API Server"
  * )
  */
-class SwaggerInfo
-{
-}
+class SwaggerInfo {}
