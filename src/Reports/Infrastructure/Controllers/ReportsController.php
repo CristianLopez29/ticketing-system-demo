@@ -1,12 +1,14 @@
 <?php
 
-namespace App\Http\Controllers;
+declare(strict_types=1);
+
+namespace Src\Reports\Infrastructure\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-class ReportsController extends Controller
+class ReportsController
 {
     public function download(Request $request): StreamedResponse
     {

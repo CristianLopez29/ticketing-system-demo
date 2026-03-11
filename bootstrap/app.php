@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Middleware\EnsureRole;
-use App\Http\Middleware\SecurityHeaders;
+use Src\Security\Infrastructure\Middleware\EnsureRole;
+use Src\Shared\Infrastructure\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;

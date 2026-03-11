@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+declare(strict_types=1);
+
+namespace Src\Security\Infrastructure\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -8,7 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
-class AuthController extends Controller
+class AuthController
 {
     public function login(Request $request): JsonResponse
     {
