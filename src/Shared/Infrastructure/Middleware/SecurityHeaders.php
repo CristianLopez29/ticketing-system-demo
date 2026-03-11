@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Middleware;
+declare(strict_types=1);
+
+namespace Src\Shared\Infrastructure\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
@@ -10,7 +12,6 @@ class SecurityHeaders
 {
     public function handle(Request $request, Closure $next): Response
     {
-        /** @var Response $response */
         $response = $next($request);
 
         $headers = [
