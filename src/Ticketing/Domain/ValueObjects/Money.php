@@ -57,4 +57,26 @@ readonly class Money
     {
         return $this->amount === 0;
     }
+
+    public function multiply(float $multiplier): self
+    {
+        if ($multiplier < 0) {
+            throw new InvalidArgumentException('Multiplier cannot be negative.');
+        }
+
+        $newAmount = (int) round($this->amount * $multiplier);
+
+        return new self($newAmount, $this->currency);
+    }
+
+    public function applyDiscountPercent(int $percent): self
+    {
+        if ($percent < 0 || $percent > 100) {
+            throw new InvalidArgumentException('Discount percent must be between 0 and 100.');
+        }
+
+        $multiplier = 1 - ($percent / 100);
+
+        return $this->multiply($multiplier);
+    }
 }
