@@ -39,7 +39,7 @@ class Ticket extends AggregateRoot
             new DateTimeImmutable
         );
 
-        $ticket->record(new \Src\Ticketing\Domain\Events\TicketSold($eventId, $seatId, $userId));
+        $ticket->record(new \Src\Ticketing\Domain\Events\TicketSold($seatId, $userId));
 
         return $ticket;
     }

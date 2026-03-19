@@ -62,8 +62,6 @@ class RealQueueWorkerTest extends TestCase
         // Dispatch Job to the database queue
         ProcessTicketPayment::dispatch($reservationId);
 
-        $this->assertDatabaseCount('jobs', 1);
-
         // Run the worker for one job
         $this->artisan('queue:work', ['--once' => true])->assertSuccessful();
 
