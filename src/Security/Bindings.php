@@ -9,11 +9,20 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Src\Security\Application\UseCases\LoginUseCase;
+use Src\Security\Domain\Ports\Authenticator;
+use Src\Security\Infrastructure\Auth\SanctumAuthenticator;
 use Src\Security\Infrastructure\Controllers\AuthController;
 
 class Bindings extends ServiceProvider
 {
-    public function register(): void {}
+    public function register(): void
+    {
+        $this->app->bind(Authenticator::class, SanctumAuthenticator::class);
+        $this->app->bind(LoginUseCase::class, function ($app) {
+            return new LoginUseCase($app->make(Authenticator::class));
+        });
+    }
 
     public function boot(): void
     {

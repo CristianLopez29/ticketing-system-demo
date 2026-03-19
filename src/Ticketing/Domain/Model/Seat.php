@@ -6,6 +6,7 @@ namespace Src\Ticketing\Domain\Model;
 
 use InvalidArgumentException;
 use Src\Shared\Domain\AggregateRoot;
+use Src\Ticketing\Domain\Exceptions\InvalidStateException;
 use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Domain\ValueObjects\SeatId;
@@ -95,6 +96,9 @@ class Seat extends AggregateRoot
 
     public function release(): void
     {
+        if ($this->reservedByUserId === null) {
+            throw new InvalidStateException("Seat {$this->row}-{$this->number} is not reserved.");
+        }
         $this->reservedByUserId = null;
     }
 }

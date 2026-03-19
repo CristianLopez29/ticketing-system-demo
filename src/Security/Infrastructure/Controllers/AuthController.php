@@ -8,40 +8,30 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Src\Security\Application\UseCases\LoginUseCase;
+use Src\Security\Domain\Exceptions\AuthenticationFailedException;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthController
 {
+    public function __construct(
+        private readonly LoginUseCase $loginUseCase
+    ) {}
+
     public function login(Request $request): JsonResponse
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
         ]);
 
-        if (! Auth::guard('web')->attempt($credentials)) {
-            return new JsonResponse([
-                'message' => 'Invalid credentials',
-            ], Response::HTTP_UNAUTHORIZED);
+        try {
+            $token = $this->loginUseCase->execute($request->input('email'), $request->input('password'));
+
+            return response()->json(['access_token' => $token]);
+        } catch (AuthenticationFailedException $e) {
+            return response()->json(['message' => 'Invalid login details'], 401);
         }
-
-        $user = Auth::guard('web')->user();
-        if (! $user) {
-            return new JsonResponse([
-                'message' => 'Unauthorized',
-            ], Response::HTTP_UNAUTHORIZED);
-        }
-
-        $token = $user->createToken('api')->plainTextToken;
-
-        return new JsonResponse([
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-            ],
-        ], Response::HTTP_OK);
     }
 
     public function logout(Request $request): JsonResponse

@@ -48,6 +48,9 @@ class EloquentSeatRepository implements SeatRepository
                 'reserved_by_user_id' => $seat->reservedByUserId(),
                 'updated_at' => now(),
             ]);
+
+        // Invalidate read model cache
+        \Illuminate\Support\Facades\Cache::forget("event:{$seat->eventId()}:seats_read_model");
     }
 
     public function countAvailableForEvent(int $eventId): int

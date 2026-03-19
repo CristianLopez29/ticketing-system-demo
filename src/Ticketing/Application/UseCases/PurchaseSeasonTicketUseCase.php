@@ -146,15 +146,21 @@ class PurchaseSeasonTicketUseCase
 
             return $result;
         } catch (\Throwable $e) {
-            $this->idempotencyStore->forget($request->idempotencyKey);
-
-            if ($reservedStockEventIds !== []) {
-                foreach ($reservedStockEventIds as $eventId) {
-                    $this->stockManager->revertReservation($eventId);
-                }
-            }
+            $this->compensate($request->idempotencyKey, $reservedStockEventIds);
 
             throw $e;
+        }
+    }
+
+    /**
+     * @param int[] $reservedStockEventIds
+     */
+    private function compensate(string $idempotencyKey, array $reservedStockEventIds): void
+    {
+        $this->idempotencyStore->forget($idempotencyKey);
+
+        foreach ($reservedStockEventIds as $eventId) {
+            $this->stockManager->revertReservation($eventId);
         }
     }
 

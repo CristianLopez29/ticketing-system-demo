@@ -73,4 +73,15 @@ class SeatTest extends TestCase
 
         $seat->reserve(1000); // Try to reserve again
     }
+
+    public function test_cannot_release_available_seat(): void
+    {
+        $seat = $this->createValidSeat();
+        $this->assertTrue($seat->isAvailable());
+
+        $this->expectException(\Src\Ticketing\Domain\Exceptions\InvalidStateException::class);
+        $this->expectExceptionMessage('Seat A-10 is not reserved.');
+
+        $seat->release();
+    }
 }
