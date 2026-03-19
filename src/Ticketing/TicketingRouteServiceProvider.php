@@ -18,6 +18,11 @@ class TicketingRouteServiceProvider extends ServiceProvider
             ->prefix('api')
             ->group(function () {
                 Route::get('/events/{id}/seats', [EventController::class, 'getSeats']);
+            });
+
+        Route::middleware(['api', 'auth:sanctum', 'role:admin'])
+            ->prefix('api')
+            ->group(function () {
                 Route::get('/events/{id}/stats', [EventController::class, 'getStats']);
             });
 
