@@ -374,4 +374,74 @@ class PurchaseSeasonTicketTest extends TestCase
             'status' => ReservationStatus::PENDING_PAYMENT->value,
         ]);
     }
+
+    public function test_fails_purchase_if_currency_mismatch(): void
+    {
+        $seasonId = DB::table('seasons')->insertGetId([
+            'name' => '2026 Season',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-12-31',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $event1Id = DB::table('events')->insertGetId([
+            'name' => 'Match 1',
+            'total_seats' => 100,
+            'season_id' => $seasonId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $event2Id = DB::table('events')->insertGetId([
+            'name' => 'Match 2',
+            'total_seats' => 100,
+            'season_id' => $seasonId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        DB::table('seats')->insert([
+            [
+                'event_id' => $event1Id,
+                'row' => 'A',
+                'number' => 1,
+                'price_amount' => 5000,
+                'price_currency' => 'EUR', // EUR
+                'reserved_by_user_id' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'event_id' => $event2Id,
+                'row' => 'A',
+                'number' => 1,
+                'price_amount' => 6000,
+                'price_currency' => 'USD', // USD! mismatch
+                'reserved_by_user_id' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        Redis::set("event:{$event1Id}:stock", 100);
+        Redis::set("event:{$event2Id}:stock", 100);
+
+        $response = $this->postJson('/api/season-tickets/purchase', [
+            'season_id' => $seasonId,
+            'row' => 'A',
+            'number' => 1,
+            'idempotency_key' => 'uuid-currency-fail',
+        ]);
+
+        $response->assertStatus(422); // Validation error handled as 422 Unprocessable Entity for RuntimeException
+        $response->assertJsonFragment(['error' => 'Currency mismatch across events in season.']);
+
+        // Stock reverted
+        $this->assertEquals(100, Redis::get("event:{$event1Id}:stock"));
+        $this->assertEquals(100, Redis::get("event:{$event2Id}:stock"));
+    }
 }

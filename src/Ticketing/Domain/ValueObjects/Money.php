@@ -29,4 +29,32 @@ readonly class Money
     {
         return strtoupper($this->currency);
     }
+
+    public function add(Money $other): self
+    {
+        if ($this->currency() !== $other->currency()) {
+            throw new InvalidArgumentException('Cannot add money with different currencies.');
+        }
+
+        return new self($this->amount + $other->amount(), $this->currency);
+    }
+
+    public function subtract(Money $other): self
+    {
+        if ($this->currency() !== $other->currency()) {
+            throw new InvalidArgumentException('Cannot subtract money with different currencies.');
+        }
+
+        return new self($this->amount - $other->amount(), $this->currency);
+    }
+
+    public function equals(Money $other): bool
+    {
+        return $this->amount === $other->amount() && $this->currency() === $other->currency();
+    }
+
+    public function isZero(): bool
+    {
+        return $this->amount === 0;
+    }
 }

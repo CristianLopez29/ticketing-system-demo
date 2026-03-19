@@ -12,14 +12,16 @@ class FakePaymentGateway implements PaymentGateway
 {
     public function charge(int $userId, Money $amount): string
     {
-        // Simulate payment processing delay
-        // usleep(100000); // 100ms
-
-        // Simulate random failure (1% chance)
-        if (random_int(1, 100) === 1) {
-            throw new RuntimeException('Payment failed due to insufficient funds or bank error.');
+        // Simulate random failure (10% chance)
+        if (random_int(1, 100) <= 10) {
+            throw new \RuntimeException('Payment declined by the bank.');
         }
 
-        return 'txn_'.bin2hex(random_bytes(16));
+        return 'fake_txn_' . uniqid('', true);
+    }
+
+    public function refund(string $transactionId): void
+    {
+        // Simulate a refund
     }
 }

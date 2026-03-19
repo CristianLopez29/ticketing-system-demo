@@ -34,6 +34,14 @@ return Application::configure(basePath: dirname(__DIR__))
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_CONFLICT);
         });
 
+        $exceptions->render(function (\Src\Ticketing\Domain\Exceptions\DuplicateRequestException $e, Request $request) {
+            if (! $request->expectsJson()) {
+                return null;
+            }
+
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_CONFLICT);
+        });
+
         $exceptions->render(function (\InvalidArgumentException $e, Request $request) {
             if (! $request->expectsJson()) {
                 return null;

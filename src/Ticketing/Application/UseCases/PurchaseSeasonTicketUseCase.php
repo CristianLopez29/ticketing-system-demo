@@ -7,6 +7,7 @@ namespace Src\Ticketing\Application\UseCases;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use RuntimeException;
+use Src\Shared\Domain\Services\UuidGenerator;
 use Src\Ticketing\Application\DTOs\PurchaseSeasonTicketRequestDTO;
 use Src\Ticketing\Application\Ports\IdempotencyStore;
 use Src\Ticketing\Application\Ports\StockManager;
@@ -15,8 +16,10 @@ use Src\Ticketing\Domain\Enums\ReservationStatus;
 use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Src\Ticketing\Domain\Model\SeasonTicket;
 use Src\Ticketing\Domain\Repositories\EventRepository;
+use Src\Ticketing\Application\Ports\IdempotencyStore;
 use Src\Ticketing\Domain\Repositories\SeasonRepository;
 use Src\Ticketing\Domain\Repositories\SeasonTicketRepository;
+use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
 use Src\Ticketing\Domain\ValueObjects\Money;
 
@@ -30,13 +33,14 @@ class PurchaseSeasonTicketUseCase
         private readonly StockManager $stockManager,
         private readonly TransactionManager $transactionManager,
         private readonly IdempotencyStore $idempotencyStore,
+        private readonly UuidGenerator $uuidGenerator,
         private readonly int $seasonTicketDiscountPercent = 20
     ) {}
 
     public function execute(PurchaseSeasonTicketRequestDTO $request): SeasonTicket
     {
         if (! $this->idempotencyStore->markAsProcessed($request->idempotencyKey)) {
-            throw new RuntimeException('This request has already been processed.');
+            throw new \Src\Ticketing\Domain\Exceptions\DuplicateRequestException('This request has already been processed.');
         }
 
         $reservedStockEventIds = [];
@@ -68,14 +72,23 @@ class PurchaseSeasonTicketUseCase
                 }
             }
 
-            $result = $this->transactionManager->run(function () use ($request, $season, &$reservedStockEventIds) {
-                $events = $this->eventRepository->findBySeasonId($season->id());
-                if (empty($events)) {
-                    throw new RuntimeException("No events found for season: {$season->id()}");
-                }
+            $events = $this->eventRepository->findBySeasonId($season->id());
+            if (empty($events)) {
+                throw new RuntimeException("No events found for season: {$season->id()}");
+            }
 
+            // Phase 1: Distributed stock check (Redis) before opening DB transaction
+            foreach ($events as $event) {
+                if ($this->stockManager->attemptToReserve($event->id())) {
+                    $reservedStockEventIds[] = $event->id();
+                } else {
+                    throw new RuntimeException("Event {$event->id()} is completely sold out.");
+                }
+            }
+
+            $result = $this->transactionManager->run(function () use ($request, $season, $events) {
                 $totalAmount = 0;
-                $currency = 'EUR';
+                $currency = null;
                 $seatsToReserve = [];
 
                 foreach ($events as $event) {
@@ -93,8 +106,13 @@ class PurchaseSeasonTicketUseCase
                         throw new SeatAlreadySoldException("Seat {$request->row}-{$request->number} is already sold for event {$event->id()}");
                     }
 
+                    if ($currency === null) {
+                        $currency = $seat->price()->currency();
+                    } elseif ($currency !== $seat->price()->currency()) {
+                        throw new RuntimeException("Currency mismatch across events in season.");
+                    }
+
                     $totalAmount += $seat->price()->amount();
-                    $currency = $seat->price()->currency();
                     $seatsToReserve[] = $seat;
                 }
 
@@ -102,12 +120,12 @@ class PurchaseSeasonTicketUseCase
                 $discountedAmount = (int) ($totalAmount * (1 - ($discountPercent / 100)));
 
                 $seasonTicket = new SeasonTicket(
-                    $this->generateUuid(),
+                    $this->uuidGenerator->generate(),
                     $request->seasonId,
                     $request->userId,
                     $request->row,
                     $request->number,
-                    new Money($discountedAmount, $currency),
+                    new Money($discountedAmount, $currency ?? 'EUR'),
                     ReservationStatus::PENDING_PAYMENT,
                     new DateTimeImmutable('+15 minutes'),
                     new DateTimeImmutable
@@ -118,12 +136,6 @@ class PurchaseSeasonTicketUseCase
                 foreach ($seatsToReserve as $seat) {
                     $seat->reserve($request->userId);
                     $this->ticketRepository->save($seat);
-
-                    if ($this->stockManager->attemptToReserve($seat->eventId())) {
-                        $reservedStockEventIds[] = $seat->eventId();
-                    } else {
-                        throw new RuntimeException("Event {$seat->eventId()} is completely sold out.");
-                    }
                 }
 
                 return $seasonTicket;
@@ -147,13 +159,5 @@ class PurchaseSeasonTicketUseCase
         }
     }
 
-    private function generateUuid(): string
-    {
-        $bytes = random_bytes(16);
 
-        $bytes[6] = chr((ord($bytes[6]) & 0x0F) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3F) | 0x80);
-
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
-    }
 }

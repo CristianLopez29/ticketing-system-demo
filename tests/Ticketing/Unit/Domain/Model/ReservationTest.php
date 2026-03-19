@@ -18,6 +18,7 @@ class ReservationTest extends TestCase
             new SeatId(1),
             123, // userId
             new Money(100, 'USD'),
+            'res-1234',
             $durationMinutes
         );
     }
@@ -56,8 +57,8 @@ class ReservationTest extends TestCase
         $reservation = $this->createReservation();
         $reservation->markAsPaid();
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Cannot pay for a reservation that is not pending.');
+        $this->expectException(\Src\Ticketing\Domain\Exceptions\ReservationAlreadyPaidException::class);
+        $this->expectExceptionMessage('Cannot pay for a reservation that is already paid.');
 
         $reservation->markAsPaid();
     }

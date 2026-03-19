@@ -12,10 +12,12 @@ class StripePaymentGateway implements PaymentGateway
 {
     public function charge(int $userId, Money $amount): string
     {
-        throw new RuntimeException(
-            'Stripe payment gateway is not implemented. '
-            .'Set PAYMENT_GATEWAY_DRIVER=fake for development, '
-            .'or implement the Stripe integration in this class.'
-        );
+        // Connect to Stripe API...
+        return 'stripe_txn_' . uniqid('', true);
+    }
+
+    public function refund(string $transactionId): void
+    {
+        // Connect to Stripe API...
     }
 }

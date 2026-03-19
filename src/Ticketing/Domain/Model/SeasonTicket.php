@@ -83,6 +83,14 @@ class SeasonTicket extends AggregateRoot
 
     public function cancel(): void
     {
+        if ($this->status === ReservationStatus::PAID) {
+            throw new \RuntimeException('Cannot cancel a paid season ticket.');
+        }
+
+        if ($this->status === ReservationStatus::CANCELLED) {
+            throw new \RuntimeException('Season ticket is already cancelled.');
+        }
+
         $this->status = ReservationStatus::CANCELLED;
     }
 }
