@@ -27,6 +27,12 @@ class ProcessTicketPayment implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public int $tries = 5;
+
+    public int $timeout = 30;
+
+    public int $backoff = 30;
+
     public function __construct(
         public readonly string $reservationId
     ) {}
@@ -50,23 +56,28 @@ class ProcessTicketPayment implements ShouldQueue
         }
 
         try {
-            // External payment gateway interaction
             $transactionId = $paymentGateway->charge($reservation->userId(), $reservation->price());
+        } catch (Throwable $e) {
+            Log::warning('Payment gateway charge failed', [
+                'reservation_id' => $this->reservationId,
+                'user_id' => $reservation->userId(),
+                'error' => $e->getMessage(),
+            ]);
 
-            // Phase 2: Payment confirmation & Ticket issuance
+            throw $e;
+        }
+
+        try {
             DB::transaction(function () use ($reservation, $ticketRepository, $reservationRepository, $transactionId) {
-                // Re-acquire lock to prevent race conditions with expiry jobs
                 $lockedReservation = $reservationRepository->findAndLock($reservation->id());
 
                 if (! $lockedReservation || $lockedReservation->status() !== ReservationStatus::PENDING_PAYMENT) {
                     throw new Exception('Reservation expired or cancelled during payment processing.');
                 }
 
-                // Confirm Reservation
                 $lockedReservation->markAsPaid();
                 $reservationRepository->save($lockedReservation);
 
-                // Issue Ticket
                 $ticket = Ticket::issue(
                     $lockedReservation->eventId(),
                     $lockedReservation->seatId(),
@@ -76,12 +87,10 @@ class ProcessTicketPayment implements ShouldQueue
                 );
                 $ticketRepository->saveTicket($ticket);
 
-                // Publish domain event
                 Event::dispatch(new TicketSold($lockedReservation->seatId(), $lockedReservation->userId()));
             });
-
         } catch (Throwable $e) {
-            Log::error('Payment failed for reservation', [
+            Log::error('Payment processing failed after charge', [
                 'reservation_id' => $this->reservationId,
                 'error' => $e->getMessage(),
             ]);
@@ -121,7 +130,6 @@ class ProcessTicketPayment implements ShouldQueue
                     'error' => $notifyError->getMessage(),
                 ]);
             }
-
             throw $e;
         }
     }
