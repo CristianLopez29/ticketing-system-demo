@@ -10,9 +10,7 @@ use Src\Reports\Infrastructure\Controllers\ReportsController;
 
 class Bindings extends ServiceProvider
 {
-    public function register(): void
-    {
-    }
+    public function register(): void {}
 
     public function boot(): void
     {
