@@ -12,6 +12,8 @@ use Src\Ticketing\Application\Queries\GetEventStatsQueryHandler;
 use Src\Ticketing\Application\UseCases\PurchaseSeasonTicketUseCase;
 use Src\Ticketing\Domain\Ports\PaymentGateway;
 use Src\Ticketing\Domain\Ports\UserNotifier;
+use Src\Ticketing\Application\Ports\IdempotencyStore;
+use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Domain\Repositories\EventRepository;
 use Src\Shared\Domain\Services\UuidGenerator;
 use Src\Shared\Infrastructure\Services\PhpUuidGenerator;

@@ -9,6 +9,8 @@ use RuntimeException;
 use Src\Shared\Domain\Services\UuidGenerator;
 use Src\Ticketing\Application\DTOs\PurchaseTicketRequestDTO;
 use Src\Ticketing\Application\Ports\AsyncDispatcher;
+use Src\Ticketing\Application\Ports\IdempotencyStore;
+use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Application\Ports\TransactionManager;
 use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Src\Ticketing\Domain\Model\Reservation;
