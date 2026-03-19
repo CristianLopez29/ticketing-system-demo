@@ -13,11 +13,16 @@ class SeatModelFactory extends Factory
     {
         return [
             'event_id' => 1,
-            'row' => 'A',
-            'number' => $this->faker->unique()->numberBetween(1, 10000),
+            'row' => $this->faker->randomElement(['A', 'B', 'C', 'D']),
+            'number' => $this->faker->unique()->numberBetween(1, 100000),
             'price_amount' => 5000,
             'price_currency' => 'USD',
             'reserved_by_user_id' => null,
         ];
+    }
+
+    public function withNumber(int $number): static
+    {
+        return $this->state(['number' => $number]);
     }
 }
