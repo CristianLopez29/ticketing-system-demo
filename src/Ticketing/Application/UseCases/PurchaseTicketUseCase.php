@@ -14,9 +14,7 @@ use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Application\Ports\TransactionManager;
 use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Src\Ticketing\Domain\Model\Reservation;
-use Src\Ticketing\Application\Ports\IdempotencyStore;
 use Src\Ticketing\Domain\Repositories\ReservationRepository;
-use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
 
 class PurchaseTicketUseCase

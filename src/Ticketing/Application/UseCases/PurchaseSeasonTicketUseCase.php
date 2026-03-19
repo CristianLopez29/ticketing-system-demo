@@ -16,10 +16,8 @@ use Src\Ticketing\Domain\Enums\ReservationStatus;
 use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Src\Ticketing\Domain\Model\SeasonTicket;
 use Src\Ticketing\Domain\Repositories\EventRepository;
-use Src\Ticketing\Application\Ports\IdempotencyStore;
 use Src\Ticketing\Domain\Repositories\SeasonRepository;
 use Src\Ticketing\Domain\Repositories\SeasonTicketRepository;
-use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
 use Src\Ticketing\Domain\ValueObjects\Money;
 
