@@ -21,8 +21,6 @@ class CleanupExpiredReservations extends Command
 
     protected $description = 'Release seats for expired pending reservations';
 
-    private const CHUNK_SIZE = 100;
-
     public function handle(
         ReservationRepository $reservationRepository,
         SeatRepository $ticketRepository,
@@ -33,8 +31,9 @@ class CleanupExpiredReservations extends Command
         $now = new DateTimeImmutable;
         $expiredReservations = $reservationRepository->findExpired($now);
 
-        do {
-            $chunk = $reservationRepository->findExpiredChunked($now, self::CHUNK_SIZE, $offset);
+        $count = count($expiredReservations);
+        if ($count === 0) {
+            $this->info('No expired reservations found.');
 
             return 0;
         }
