@@ -38,15 +38,12 @@ class RedisStockManager implements StockManager
                     Redis::del($lockKey);
                 }
             } else {
-                $maxAttempts = 30; // Increased attempts
-                for ($i = 0; $i < $maxAttempts; $i++) {
-                    usleep(100_000); // 100ms
-                    if (Redis::get($key) !== null) {
-                        break;
-                    }
-                }
-
+                // Single short pause — just enough for a likely concurrent rehydration round-trip.
+                // Avoids blocking the PHP-FPM worker for up to 3 seconds under load.
+                usleep(50_000); // 50ms
                 if (Redis::get($key) === null) {
+                    // The other worker may have died; rehydrate directly.
+                    // setnx inside prevents double-write races.
                     $this->rehydrateStockFromDatabase($eventId, $key);
                 }
             }

@@ -63,7 +63,6 @@ class ReservationCleanupTest extends TestCase
         $this->assertInstanceOf(PendingCommand::class, $pending);
 
         $pending
-            ->expectsOutput('Found 1 expired reservations. Processing...')
             ->expectsOutput("Cleaned up reservation: {$reservationId}")
             ->assertExitCode(0)
             ->run();

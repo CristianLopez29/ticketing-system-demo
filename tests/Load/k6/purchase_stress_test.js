@@ -42,7 +42,7 @@ export function setup() {
   });
 
   const body = JSON.parse(loginRes.body);
-  return { token: body.token };
+  return { token: body.access_token };
 }
 
 export default function (data) {

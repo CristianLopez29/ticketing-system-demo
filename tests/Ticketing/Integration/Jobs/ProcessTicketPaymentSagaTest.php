@@ -1,6 +1,7 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1)
+;
 
 namespace Tests\Ticketing\Integration\Jobs;
 
@@ -61,14 +62,14 @@ class ProcessTicketPaymentSagaTest extends TestCase
 
         // We want the charge to succeed, but the subsequent DB operation to fail.
         // And then the refund should also fail.
-        
+
         // Let's force a failure in the DB transaction by deleting the reservation before it runs,
         // wait, the job uses `findAndLock`, if it returns null, it throws an Exception.
-        
+
         // We can just delete the reservation directly right after charge by mocking the PaymentGateway?
         // Let's use a mock for PaymentGateway to delete the reservation during the charge method
         // But wait, charge is called, then DB transaction. We can just delete the reservation manually by mocking PaymentGateway's charge to call parent::charge and also delete reservation.
-        
+
         $gateway = new class extends FakePaymentGateway {
             public string $resId = '';
             public function charge(int $userId, \Src\Ticketing\Domain\ValueObjects\Money $amount): string
@@ -80,16 +81,17 @@ class ProcessTicketPaymentSagaTest extends TestCase
             }
         };
         $gateway->resId = $reservationId;
-        $this->app->instance(\Src\Ticketing\Domain\Ports\PaymentGateway::class, $gateway);
-        
+        $this->app->instance(\Src\Ticketing\Domain\Ports\PaymentGateway::class , $gateway);
+
         FakePaymentGateway::forceFailNextRefund(true);
 
         $job = new ProcessTicketPayment($reservationId);
         try {
             app()->call([$job, 'handle']);
             $this->fail('Expected an exception to be thrown, but none was.');
-        } catch (\Exception $e) {
-            // Exception is expected — continue to assertions below
+        }
+        catch (\Exception $e) {
+        // Exception is expected — continue to assertions below
         }
 
         // Assert pending refund was created
