@@ -5,66 +5,29 @@ declare(strict_types=1);
 namespace Src\Ticketing\Infrastructure\Controllers;
 
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redis;
+use Src\Ticketing\Application\Queries\GetEventSeatsQuery;
+use Src\Ticketing\Application\Queries\GetEventSeatsQueryHandler;
+use Src\Ticketing\Application\Queries\GetEventStatsQuery;
+use Src\Ticketing\Application\Queries\GetEventStatsQueryHandler;
 
 class EventController
 {
+    public function __construct(
+        private readonly GetEventSeatsQueryHandler $seatsHandler,
+        private readonly GetEventStatsQueryHandler $statsHandler
+    ) {}
+
     public function getSeats(int $eventId): JsonResponse
     {
-        // Projection (Read Model): Optimized query bypassing Domain Entities for performance
-        $seats = DB::table('seats')
-            ->where('event_id', $eventId)
-            ->select(['id', 'row', 'number', 'price_amount', 'price_currency', 'reserved_by_user_id'])
-            ->orderBy('row')
-            ->orderBy('number')
-            ->get()
-            ->map(function ($seat) {
-                return [
-                    'id' => $seat->id,
-                    'row' => $seat->row,
-                    'number' => $seat->number,
-                    'price' => [
-                        'amount' => $seat->price_amount,
-                        'currency' => $seat->price_currency,
-                    ],
-                    'status' => $seat->reserved_by_user_id ? 'sold' : 'available',
-                ];
-            });
+        $seats = $this->seatsHandler->handle(new GetEventSeatsQuery($eventId));
 
         return new JsonResponse($seats);
     }
 
     public function getStats(int $eventId): JsonResponse
     {
-        $dbSold = DB::table('seats')
-            ->where('event_id', $eventId)
-            ->whereNotNull('reserved_by_user_id')
-            ->count();
+        $stats = $this->statsHandler->handle(new GetEventStatsQuery($eventId));
 
-        $totalSeats = DB::table('seats')
-            ->where('event_id', $eventId)
-            ->count();
-
-        $redisStockValue = Redis::get("event:{$eventId}:stock");
-        $redisStock = is_numeric($redisStockValue) ? (int) $redisStockValue : 0;
-
-        $ticketsIssued = DB::table('tickets')
-            ->where('event_id', $eventId)
-            ->count();
-
-        $reservationsPending = DB::table('reservations')
-            ->where('event_id', $eventId)
-            ->where('status', 'pending_payment')
-            ->count();
-
-        return new JsonResponse([
-            'total_seats' => $totalSeats,
-            'sold_seats_db' => $dbSold,
-            'available_stock_redis' => $redisStock,
-            'tickets_issued' => $ticketsIssued,
-            'reservations_pending' => $reservationsPending,
-            'integrity_check' => ($dbSold + $redisStock) === $totalSeats ? 'OK' : 'MISMATCH',
-        ]);
+        return new JsonResponse($stats);
     }
 }

@@ -4,32 +4,32 @@ declare(strict_types=1);
 
 namespace Src\Ticketing\Application\UseCases;
 
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
 use Src\Ticketing\Application\DTOs\PurchaseTicketRequestDTO;
+use Src\Ticketing\Application\Ports\AsyncDispatcher;
+use Src\Ticketing\Application\Ports\TransactionManager;
 use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Src\Ticketing\Domain\Model\Reservation;
+use Src\Ticketing\Domain\Repositories\IdempotencyStore;
 use Src\Ticketing\Domain\Repositories\ReservationRepository;
 use Src\Ticketing\Domain\Repositories\StockManager;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
-use Src\Ticketing\Infrastructure\Jobs\ProcessTicketPayment;
 
 class PurchaseTicketUseCase
 {
     public function __construct(
         private readonly TicketRepository $repository,
         private readonly ReservationRepository $reservationRepository,
-        private readonly StockManager $stockManager
+        private readonly StockManager $stockManager,
+        private readonly IdempotencyStore $idempotencyStore,
+        private readonly TransactionManager $transactionManager,
+        private readonly AsyncDispatcher $dispatcher
     ) {}
 
     public function execute(PurchaseTicketRequestDTO $request): string
     {
-        $idempotencyKey = 'purchase:idempotency:'.$request->idempotencyKey;
-
-        // Enforce idempotency via cache lock
-        if (! Cache::add($idempotencyKey, true, now()->addMinutes(10))) {
+        if (! $this->idempotencyStore->markAsProcessed($request->idempotencyKey)) {
             throw new RuntimeException('This request has already been processed.');
         }
 
@@ -41,7 +41,7 @@ class PurchaseTicketUseCase
             }
 
             // Phase 1: Sync reservation & acknowledgement
-            $reservationId = DB::transaction(function () use ($request) {
+            $reservationId = $this->transactionManager->run(function () use ($request) {
                 $seat = $this->repository->findAndLock($request->seatId);
 
                 if (! $seat) {
@@ -67,7 +67,11 @@ class PurchaseTicketUseCase
             });
 
             // Initiate async payment processing (Saga pattern)
-            ProcessTicketPayment::dispatch($reservationId);
+            if (! is_string($reservationId)) {
+                throw new RuntimeException('Unexpected reservation id.');
+            }
+
+            $this->dispatcher->dispatch($reservationId);
 
             return $reservationId;
 
@@ -75,7 +79,7 @@ class PurchaseTicketUseCase
             if (isset($hasStock) && $hasStock) {
                 $this->stockManager->revertReservation($request->eventId);
             }
-            Cache::forget($idempotencyKey);
+            $this->idempotencyStore->forget($request->idempotencyKey);
 
             throw $e;
         }

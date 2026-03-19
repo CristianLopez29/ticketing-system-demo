@@ -13,9 +13,7 @@ use Src\Security\Infrastructure\Controllers\AuthController;
 
 class Bindings extends ServiceProvider
 {
-    public function register(): void
-    {
-    }
+    public function register(): void {}
 
     public function boot(): void
     {
