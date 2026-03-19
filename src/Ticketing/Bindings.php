@@ -12,12 +12,14 @@ use Src\Ticketing\Application\Queries\GetEventStatsQueryHandler;
 use Src\Ticketing\Application\UseCases\PurchaseSeasonTicketUseCase;
 use Src\Ticketing\Domain\Ports\PaymentGateway;
 use Src\Ticketing\Domain\Ports\UserNotifier;
-use Src\Ticketing\Application\Ports\IdempotencyStore;
-use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Domain\Repositories\EventRepository;
+use Src\Shared\Domain\Services\UuidGenerator;
+use Src\Shared\Infrastructure\Services\PhpUuidGenerator;
+use Src\Ticketing\Application\Ports\IdempotencyStore;
 use Src\Ticketing\Domain\Repositories\ReservationRepository;
 use Src\Ticketing\Domain\Repositories\SeasonRepository;
 use Src\Ticketing\Domain\Repositories\SeasonTicketRepository;
+use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
 use Src\Ticketing\Infrastructure\Console\Commands\CleanupExpiredReservations;
 use Src\Ticketing\Infrastructure\Jobs\LaravelAsyncDispatcher;
@@ -45,6 +47,7 @@ class Bindings extends ServiceProvider
         $this->app->bind(ReservationRepository::class, EloquentReservationRepository::class);
         $this->app->bind(StockManager::class, RedisStockManager::class);
         $this->app->bind(IdempotencyStore::class, RedisIdempotencyStore::class);
+        $this->app->bind(UuidGenerator::class, PhpUuidGenerator::class);
         $this->app->bind(TransactionManager::class, LaravelTransactionManager::class);
         $this->app->bind(AsyncDispatcher::class, LaravelAsyncDispatcher::class);
         $this->app->bind(UserNotifier::class, LogUserNotifier::class);
@@ -63,6 +66,7 @@ class Bindings extends ServiceProvider
                 $app->make(StockManager::class),
                 $app->make(TransactionManager::class),
                 $app->make(IdempotencyStore::class),
+                $app->make(UuidGenerator::class),
                 $discount
             );
         });

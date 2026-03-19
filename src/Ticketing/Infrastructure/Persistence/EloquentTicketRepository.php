@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Src\Ticketing\Infrastructure\Persistence;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event as LaravelEvent;
 use Src\Ticketing\Domain\Model\Seat;
 use Src\Ticketing\Domain\Model\Ticket;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
@@ -90,5 +91,9 @@ class EloquentTicketRepository implements TicketRepository
         $data['updated_at'] = now();
 
         DB::table('tickets')->insert($data);
+
+        foreach ($ticket->pullDomainEvents() as $domainEvent) {
+            LaravelEvent::dispatch($domainEvent);
+        }
     }
 }

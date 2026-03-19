@@ -14,4 +14,9 @@ interface PaymentGateway
      * Throws an exception on failure.
      */
     public function charge(int $userId, Money $amount): string;
+
+    /**
+     * Refunds a previously charged transaction.
+     */
+    public function refund(string $transactionId): void;
 }

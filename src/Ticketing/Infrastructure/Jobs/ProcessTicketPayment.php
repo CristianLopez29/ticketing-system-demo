@@ -10,7 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\DB;
+use Src\Ticketing\Application\Ports\TransactionManager;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
@@ -19,6 +19,7 @@ use Src\Ticketing\Domain\Model\Ticket;
 use Src\Ticketing\Domain\Ports\PaymentGateway;
 use Src\Ticketing\Domain\Ports\UserNotifier;
 use Src\Ticketing\Domain\Repositories\ReservationRepository;
+use Src\Shared\Domain\Services\UuidGenerator;
 use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
 use Throwable;
@@ -31,7 +32,22 @@ class ProcessTicketPayment implements ShouldQueue
 
     public int $timeout = 30;
 
-    public int $backoff = 30;
+    /**
+     * Calculate the number of seconds to wait before retrying the job.
+     * Exponential backoff: 10s, 20s, 40s, 80s...
+     */
+    public function backoff(): array
+    {
+        return [10, 20, 40, 80];
+    }
+
+    /**
+     * Determine the time at which the job should timeout.
+     */
+    public function retryUntil(): \DateTime
+    {
+        return now()->addMinutes(10);
+    }
 
     public function __construct(
         public readonly string $reservationId
@@ -42,7 +58,9 @@ class ProcessTicketPayment implements ShouldQueue
         TicketRepository $ticketRepository,
         PaymentGateway $paymentGateway,
         StockManager $stockManager,
-        UserNotifier $userNotifier
+        UserNotifier $userNotifier,
+        UuidGenerator $uuidGenerator,
+        TransactionManager $transactionManager
     ): void {
         $reservation = $reservationRepository->find($this->reservationId);
 
@@ -68,7 +86,7 @@ class ProcessTicketPayment implements ShouldQueue
         }
 
         try {
-            DB::transaction(function () use ($reservation, $ticketRepository, $reservationRepository, $transactionId) {
+            $transactionManager->run(function () use ($reservation, $ticketRepository, $reservationRepository, $transactionId, $uuidGenerator) {
                 $lockedReservation = $reservationRepository->findAndLock($reservation->id());
 
                 if (! $lockedReservation || $lockedReservation->status() !== ReservationStatus::PENDING_PAYMENT) {
@@ -83,11 +101,10 @@ class ProcessTicketPayment implements ShouldQueue
                     $lockedReservation->seatId(),
                     $lockedReservation->userId(),
                     $lockedReservation->price(),
-                    $transactionId
+                    $transactionId,
+                    $uuidGenerator->generate()
                 );
                 $ticketRepository->saveTicket($ticket);
-
-                Event::dispatch(new TicketSold($lockedReservation->seatId(), $lockedReservation->userId()));
             });
         } catch (Throwable $e) {
             Log::error('Payment processing failed after charge', [
@@ -95,7 +112,7 @@ class ProcessTicketPayment implements ShouldQueue
                 'error' => $e->getMessage(),
             ]);
 
-            DB::transaction(function () use ($reservationRepository, $ticketRepository, $stockManager) {
+            $transactionManager->run(function () use ($reservationRepository, $ticketRepository, $stockManager) {
                 $lockedReservation = $reservationRepository->findAndLock($this->reservationId);
 
                 if (! $lockedReservation) {
@@ -117,6 +134,18 @@ class ProcessTicketPayment implements ShouldQueue
 
                 $stockManager->revertReservation($lockedReservation->eventId());
             });
+
+            if (isset($transactionId)) {
+                try {
+                    $paymentGateway->refund($transactionId);
+                } catch (Throwable $refundException) {
+                    Log::error('Failed to refund after DB failure', [
+                        'transaction_id' => $transactionId,
+                        'reservation_id' => $this->reservationId,
+                        'error' => $refundException->getMessage(),
+                    ]);
+                }
+            }
 
             try {
                 $userNotifier->notifyPaymentFailed(

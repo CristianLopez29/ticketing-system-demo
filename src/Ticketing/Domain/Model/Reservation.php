@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use RuntimeException;
 use Src\Shared\Domain\AggregateRoot;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
+use Src\Ticketing\Domain\Exceptions\ReservationAlreadyPaidException;
 use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Domain\ValueObjects\SeatId;
 
@@ -29,10 +30,11 @@ class Reservation extends AggregateRoot
         SeatId $seatId,
         int $userId,
         Money $price,
+        string $id,
         int $durationMinutes = 5
     ): self {
         return new self(
-            self::generateUuid(),
+            $id,
             $eventId,
             $seatId,
             $userId,
@@ -89,6 +91,9 @@ class Reservation extends AggregateRoot
     public function markAsPaid(): void
     {
         if ($this->status !== ReservationStatus::PENDING_PAYMENT) {
+            if ($this->status === ReservationStatus::PAID) {
+                throw new ReservationAlreadyPaidException('Cannot pay for a reservation that is already paid.');
+            }
             throw new RuntimeException('Cannot pay for a reservation that is not pending.');
         }
         if ($this->isExpired()) {
@@ -105,6 +110,10 @@ class Reservation extends AggregateRoot
     {
         if ($this->status === ReservationStatus::PAID) {
             throw new RuntimeException('Cannot cancel a paid reservation.');
+        }
+
+        if ($this->status === ReservationStatus::CANCELLED) {
+            throw new RuntimeException('Reservation is already cancelled.');
         }
 
         $this->status = ReservationStatus::CANCELLED;
@@ -125,16 +134,5 @@ class Reservation extends AggregateRoot
         ];
     }
 
-    /**
-     * Generate a UUID v4 (RFC 4122) without framework dependencies.
-     */
-    private static function generateUuid(): string
-    {
-        $bytes = random_bytes(16);
 
-        $bytes[6] = chr((ord($bytes[6]) & 0x0F) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3F) | 0x80);
-
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
-    }
 }

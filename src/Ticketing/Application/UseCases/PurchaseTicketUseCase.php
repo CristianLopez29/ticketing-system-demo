@@ -6,14 +6,15 @@ namespace Src\Ticketing\Application\UseCases;
 
 use InvalidArgumentException;
 use RuntimeException;
+use Src\Shared\Domain\Services\UuidGenerator;
 use Src\Ticketing\Application\DTOs\PurchaseTicketRequestDTO;
 use Src\Ticketing\Application\Ports\AsyncDispatcher;
-use Src\Ticketing\Application\Ports\IdempotencyStore;
-use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Application\Ports\TransactionManager;
 use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Src\Ticketing\Domain\Model\Reservation;
+use Src\Ticketing\Application\Ports\IdempotencyStore;
 use Src\Ticketing\Domain\Repositories\ReservationRepository;
+use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
 
 class PurchaseTicketUseCase
@@ -24,13 +25,14 @@ class PurchaseTicketUseCase
         private readonly StockManager $stockManager,
         private readonly IdempotencyStore $idempotencyStore,
         private readonly TransactionManager $transactionManager,
-        private readonly AsyncDispatcher $dispatcher
+        private readonly AsyncDispatcher $dispatcher,
+        private readonly UuidGenerator $uuidGenerator
     ) {}
 
     public function execute(PurchaseTicketRequestDTO $request): string
     {
         if (! $this->idempotencyStore->markAsProcessed($request->idempotencyKey)) {
-            throw new RuntimeException('This request has already been processed.');
+            throw new \Src\Ticketing\Domain\Exceptions\DuplicateRequestException('This request has already been processed.');
         }
 
         try {
@@ -59,7 +61,8 @@ class PurchaseTicketUseCase
                     $request->eventId,
                     $seat->id(),
                     $request->userId,
-                    $seat->price()
+                    $seat->price(),
+                    $this->uuidGenerator->generate()
                 );
                 $this->reservationRepository->save($reservation);
 
