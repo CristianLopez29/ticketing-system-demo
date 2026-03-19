@@ -6,6 +6,7 @@ namespace Src\Ticketing\Application\UseCases;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use Psr\Clock\ClockInterface;
 use RuntimeException;
 use Src\Shared\Domain\Services\UuidGenerator;
 use Src\Ticketing\Application\DTOs\PurchaseSeasonTicketRequestDTO;
@@ -32,12 +33,22 @@ class PurchaseSeasonTicketUseCase
         private readonly TransactionManager $transactionManager,
         private readonly IdempotencyStore $idempotencyStore,
         private readonly UuidGenerator $uuidGenerator,
+        private readonly ClockInterface $clock,
         private readonly int $seasonTicketDiscountPercent = 20
     ) {}
 
     public function execute(PurchaseSeasonTicketRequestDTO $request): SeasonTicket
     {
         if (! $this->idempotencyStore->markAsProcessed($request->idempotencyKey)) {
+            // If completed before, the caller is just retrying — return the stored result
+            $previousId = $this->idempotencyStore->getResult($request->idempotencyKey);
+            if ($previousId !== null) {
+                // Re-fetch and return the existing season ticket object
+                $existing = $this->seasonTicketRepository->find($previousId);
+                if ($existing) {
+                    return $existing;
+                }
+            }
             throw new \Src\Ticketing\Domain\Exceptions\DuplicateRequestException('This request has already been processed.');
         }
 
@@ -50,7 +61,7 @@ class PurchaseSeasonTicketUseCase
                 throw new InvalidArgumentException("Season not found: {$request->seasonId}");
             }
 
-            $now = new DateTimeImmutable;
+            $now = $this->clock->now();
             if ($season->isRenewalWindow($now)) {
                 $previousSeasonId = $season->previousSeasonId();
                 if ($previousSeasonId) {
@@ -126,8 +137,8 @@ class PurchaseSeasonTicketUseCase
                     $request->number,
                     $discountedPrice,
                     ReservationStatus::PENDING_PAYMENT,
-                    new DateTimeImmutable('+15 minutes'),
-                    new DateTimeImmutable
+                    $this->clock->now()->modify('+15 minutes'),
+                    $this->clock->now()
                 );
 
                 $this->seasonTicketRepository->save($seasonTicket);
@@ -143,6 +154,9 @@ class PurchaseSeasonTicketUseCase
             if (! $result instanceof SeasonTicket) {
                 throw new RuntimeException('Unexpected result while creating season ticket.');
             }
+
+            // Store the result so retrying callers get the original outcome
+            $this->idempotencyStore->markAsCompleted($request->idempotencyKey, $result->id());
 
             return $result;
         } catch (\Throwable $e) {

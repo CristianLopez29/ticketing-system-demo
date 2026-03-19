@@ -33,6 +33,11 @@ class PurchaseTicketUseCase
     public function execute(PurchaseTicketRequestDTO $request): string
     {
         if (! $this->idempotencyStore->markAsProcessed($request->idempotencyKey)) {
+            // If completed before, return the original result instead of throwing
+            $previousResult = $this->idempotencyStore->getResult($request->idempotencyKey);
+            if ($previousResult !== null) {
+                return $previousResult;
+            }
             throw new \Src\Ticketing\Domain\Exceptions\DuplicateRequestException('This request has already been processed.');
         }
 
@@ -76,6 +81,9 @@ class PurchaseTicketUseCase
             }
 
             $this->dispatcher->dispatch($reservationId);
+
+            // Store the result — allows duplicate requests to retrieve it instead of being blocked
+            $this->idempotencyStore->markAsCompleted($request->idempotencyKey, $reservationId);
 
             return $reservationId;
 
