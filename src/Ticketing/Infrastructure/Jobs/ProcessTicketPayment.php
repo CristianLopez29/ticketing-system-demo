@@ -19,7 +19,7 @@ use Src\Ticketing\Domain\Model\Ticket;
 use Src\Ticketing\Domain\Ports\PaymentGateway;
 use Src\Ticketing\Domain\Ports\UserNotifier;
 use Src\Ticketing\Domain\Repositories\ReservationRepository;
-use Src\Ticketing\Domain\Repositories\StockManager;
+use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
 use Throwable;
 
