@@ -12,10 +12,12 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
 use Src\Ticketing\Domain\Events\TicketSold;
 use Src\Ticketing\Domain\Model\Ticket;
 use Src\Ticketing\Domain\Ports\PaymentGateway;
+use Src\Ticketing\Domain\Ports\UserNotifier;
 use Src\Ticketing\Domain\Repositories\ReservationRepository;
 use Src\Ticketing\Domain\Repositories\StockManager;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
@@ -33,7 +35,8 @@ class ProcessTicketPayment implements ShouldQueue
         ReservationRepository $reservationRepository,
         TicketRepository $ticketRepository,
         PaymentGateway $paymentGateway,
-        StockManager $stockManager
+        StockManager $stockManager,
+        UserNotifier $userNotifier
     ): void {
         $reservation = $reservationRepository->find($this->reservationId);
 
@@ -78,25 +81,48 @@ class ProcessTicketPayment implements ShouldQueue
             });
 
         } catch (Throwable $e) {
-            // Compensation logic (Saga rollback)
+            Log::error('Payment failed for reservation', [
+                'reservation_id' => $this->reservationId,
+                'error' => $e->getMessage(),
+            ]);
 
-            DB::transaction(function () use ($reservation, $reservationRepository, $ticketRepository, $stockManager) {
-                $reservation->cancel();
-                $reservationRepository->save($reservation);
+            DB::transaction(function () use ($reservationRepository, $ticketRepository, $stockManager) {
+                $lockedReservation = $reservationRepository->findAndLock($this->reservationId);
 
-                // Release the seat lock
-                $seat = $ticketRepository->findAndLock($reservation->seatId());
-                if ($seat && $seat->reservedByUserId() === $reservation->userId()) {
+                if (! $lockedReservation) {
+                    return;
+                }
+
+                if ($lockedReservation->status() !== ReservationStatus::PENDING_PAYMENT) {
+                    return;
+                }
+
+                $lockedReservation->cancel();
+                $reservationRepository->save($lockedReservation);
+
+                $seat = $ticketRepository->findAndLock($lockedReservation->seatId());
+                if ($seat && $seat->reservedByUserId() === $lockedReservation->userId()) {
                     $seat->release();
                     $ticketRepository->save($seat);
                 }
 
-                // Revert Redis Stock
-                $stockManager->revertReservation($reservation->eventId());
+                $stockManager->revertReservation($lockedReservation->eventId());
             });
 
-            // In a real system, you might want to log this or notify the user via email
-            // throw $e; // Don't throw if you handled the compensation, unless you want retry.
+            try {
+                $userNotifier->notifyPaymentFailed(
+                    $reservation->userId(),
+                    $this->reservationId,
+                    $e->getMessage()
+                );
+            } catch (Throwable $notifyError) {
+                Log::warning('Failed to notify user of payment failure', [
+                    'reservation_id' => $this->reservationId,
+                    'error' => $notifyError->getMessage(),
+                ]);
+            }
+
+            throw $e;
         }
     }
 }

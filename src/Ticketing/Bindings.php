@@ -11,6 +11,7 @@ use Src\Ticketing\Application\Queries\GetEventSeatsQueryHandler;
 use Src\Ticketing\Application\Queries\GetEventStatsQueryHandler;
 use Src\Ticketing\Application\UseCases\PurchaseSeasonTicketUseCase;
 use Src\Ticketing\Domain\Ports\PaymentGateway;
+use Src\Ticketing\Domain\Ports\UserNotifier;
 use Src\Ticketing\Domain\Repositories\EventRepository;
 use Src\Ticketing\Domain\Repositories\IdempotencyStore;
 use Src\Ticketing\Domain\Repositories\ReservationRepository;
@@ -20,6 +21,7 @@ use Src\Ticketing\Domain\Repositories\StockManager;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
 use Src\Ticketing\Infrastructure\Console\Commands\CleanupExpiredReservations;
 use Src\Ticketing\Infrastructure\Jobs\LaravelAsyncDispatcher;
+use Src\Ticketing\Infrastructure\Notifications\LogUserNotifier;
 use Src\Ticketing\Infrastructure\Payment\FakePaymentGateway;
 use Src\Ticketing\Infrastructure\Persistence\EloquentEventRepository;
 use Src\Ticketing\Infrastructure\Persistence\EloquentReservationRepository;
@@ -45,6 +47,7 @@ class Bindings extends ServiceProvider
         $this->app->bind(IdempotencyStore::class, RedisIdempotencyStore::class);
         $this->app->bind(TransactionManager::class, LaravelTransactionManager::class);
         $this->app->bind(AsyncDispatcher::class, LaravelAsyncDispatcher::class);
+        $this->app->bind(UserNotifier::class, LogUserNotifier::class);
         $this->app->bind(GetEventSeatsQueryHandler::class, LaravelGetEventSeatsQueryHandler::class);
         $this->app->bind(GetEventStatsQueryHandler::class, LaravelGetEventStatsQueryHandler::class);
 

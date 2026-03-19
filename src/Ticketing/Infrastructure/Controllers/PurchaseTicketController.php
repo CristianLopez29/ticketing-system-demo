@@ -6,12 +6,8 @@ namespace Src\Ticketing\Infrastructure\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use InvalidArgumentException;
-use RuntimeException;
 use Src\Ticketing\Application\DTOs\PurchaseTicketRequestDTO;
 use Src\Ticketing\Application\UseCases\PurchaseTicketUseCase;
-use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Src\Ticketing\Domain\ValueObjects\SeatId;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -43,39 +39,18 @@ class PurchaseTicketController
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        try {
-            $dto = new PurchaseTicketRequestDTO(
-                (int) $validated['event_id'],
-                new SeatId((int) $validated['seat_id']),
-                (int) $user->id,
-                $idempotencyKey
-            );
+        $dto = new PurchaseTicketRequestDTO(
+            (int) $validated['event_id'],
+            new SeatId((int) $validated['seat_id']),
+            (int) $user->id,
+            $idempotencyKey
+        );
 
-            $reservationId = $this->useCase->execute($dto);
+        $reservationId = $this->useCase->execute($dto);
 
-            return new JsonResponse([
-                'message' => 'Purchase processing started. You will receive a confirmation shortly.',
-                'reservation_id' => $reservationId,
-            ], Response::HTTP_ACCEPTED);
-
-        } catch (SeatAlreadySoldException $e) {
-            return new JsonResponse([
-                'error' => $e->getMessage(),
-            ], Response::HTTP_CONFLICT);
-        } catch (RuntimeException $e) {
-            return new JsonResponse([
-                'error' => $e->getMessage(),
-            ], Response::HTTP_UNPROCESSABLE_ENTITY); // Domain/Business rule violation
-        } catch (InvalidArgumentException $e) {
-            return new JsonResponse([
-                'error' => $e->getMessage(),
-            ], Response::HTTP_NOT_FOUND);
-        } catch (\Throwable $e) {
-            Log::error('Purchase failed: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
-
-            return new JsonResponse([
-                'error' => 'An unexpected error occurred.',
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
+        return new JsonResponse([
+            'message' => 'Purchase processing started. You will receive a confirmation shortly.',
+            'reservation_id' => $reservationId,
+        ], Response::HTTP_ACCEPTED);
     }
 }
