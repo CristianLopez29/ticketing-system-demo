@@ -12,7 +12,6 @@ use Src\Ticketing\Domain\Repositories\ReservationRepository;
 use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Application\Ports\TransactionManager;
 use Src\Ticketing\Domain\Repositories\SeatRepository;
-use Src\Ticketing\Domain\Repositories\TicketRepository;
 use Throwable;
 
 class CleanupExpiredReservations extends Command
@@ -24,7 +23,6 @@ class CleanupExpiredReservations extends Command
     public function handle(
         ReservationRepository $reservationRepository,
         SeatRepository $ticketRepository,
-        TicketRepository $ticketRepository,
         StockManager $stockManager,
         TransactionManager $transactionManager
     ): int {
