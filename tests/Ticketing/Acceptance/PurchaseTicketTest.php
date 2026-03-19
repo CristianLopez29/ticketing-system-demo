@@ -30,7 +30,7 @@ class PurchaseTicketTest extends TestCase
         Event::fake([TicketSold::class]);
         Bus::fake();
 
-        $user = User::factory()->create(['id' => 999]);
+        $user = User::factory()->create();
         Sanctum::actingAs($user);
 
         $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
@@ -82,7 +82,7 @@ class PurchaseTicketTest extends TestCase
 
     public function test_fails_when_seat_already_sold(): void
     {
-        $user = User::factory()->create(['id' => 999]);
+        $user = User::factory()->create();
         Sanctum::actingAs($user);
 
         // Mock Payment Gateway (should not be called, but just in case)
@@ -118,7 +118,7 @@ class PurchaseTicketTest extends TestCase
     {
         Bus::fake();
 
-        $user = User::factory()->create(['id' => 999]);
+        $user = User::factory()->create();
         Sanctum::actingAs($user);
 
         $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
