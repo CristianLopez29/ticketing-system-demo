@@ -444,4 +444,60 @@ class PurchaseSeasonTicketTest extends TestCase
         $this->assertEquals(100, Redis::get("event:{$event1Id}:stock"));
         $this->assertEquals(100, Redis::get("event:{$event2Id}:stock"));
     }
+
+    public function test_idempotency_prevents_duplicate_processing(): void
+    {
+        $seasonId = DB::table('seasons')->insertGetId([
+            'name' => '2026 Season',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-12-31',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $event1Id = DB::table('events')->insertGetId([
+            'name' => 'Match 1',
+            'total_seats' => 100,
+            'season_id' => $seasonId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        DB::table('seats')->insert([
+            [
+                'event_id' => $event1Id,
+                'row' => 'A',
+                'number' => 1,
+                'price_amount' => 5000,
+                'price_currency' => 'EUR',
+                'reserved_by_user_id' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        ]);
+
+        Redis::set("event:{$event1Id}:stock", 100);
+
+        // First attempt
+        $this->postJson('/api/season-tickets/purchase', [
+            'season_id' => $seasonId,
+            'row' => 'A',
+            'number' => 1,
+            'idempotency_key' => 'uuid-idempotency-test',
+        ])->assertStatus(201);
+
+        // Second attempt with exact same key
+        $response = $this->postJson('/api/season-tickets/purchase', [
+            'season_id' => $seasonId,
+            'row' => 'A',
+            'number' => 1,
+            'idempotency_key' => 'uuid-idempotency-test',
+        ]);
+
+        $response->assertStatus(409);
+        $response->assertSee('This request has already been processed');
+    }
 }

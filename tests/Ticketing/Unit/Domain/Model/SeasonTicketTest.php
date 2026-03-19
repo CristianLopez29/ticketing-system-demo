@@ -4,8 +4,8 @@ namespace Tests\Ticketing\Unit\Domain\Model;
 
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
-use RuntimeException;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
+use Src\Ticketing\Domain\Exceptions\InvalidStateException;
 use Src\Ticketing\Domain\Model\SeasonTicket;
 use Src\Ticketing\Domain\ValueObjects\Money;
 
@@ -43,7 +43,7 @@ class SeasonTicketTest extends TestCase
         $ticket = $this->createSeasonTicket();
         $ticket->pay();
 
-        $this->expectException(RuntimeException::class);
+        $this->expectException(InvalidStateException::class);
         $this->expectExceptionMessage('Cannot pay for a non-pending season ticket.');
 
         $ticket->pay();

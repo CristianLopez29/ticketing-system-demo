@@ -9,6 +9,7 @@ use RuntimeException;
 use Src\Shared\Domain\AggregateRoot;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
 use Src\Ticketing\Domain\Exceptions\ReservationAlreadyPaidException;
+use Src\Ticketing\Domain\Exceptions\InvalidStateException;
 use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Domain\ValueObjects\SeatId;
 
@@ -94,10 +95,10 @@ class Reservation extends AggregateRoot
             if ($this->status === ReservationStatus::PAID) {
                 throw new ReservationAlreadyPaidException('Cannot pay for a reservation that is already paid.');
             }
-            throw new RuntimeException('Cannot pay for a reservation that is not pending.');
+            throw new InvalidStateException('Cannot pay for a reservation that is not pending.');
         }
         if ($this->isExpired()) {
-            throw new RuntimeException('Reservation has expired.');
+            throw new InvalidStateException('Reservation has expired.');
         }
 
         $this->status = ReservationStatus::PAID;

@@ -8,6 +8,7 @@ use Src\Ticketing\Domain\Enums\ReservationStatus;
 use Src\Ticketing\Domain\Model\Reservation;
 use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Domain\ValueObjects\SeatId;
+use Src\Ticketing\Domain\Exceptions\InvalidStateException;
 
 class ReservationTest extends TestCase
 {
@@ -46,7 +47,7 @@ class ReservationTest extends TestCase
 
         $this->assertTrue($reservation->isExpired());
 
-        $this->expectException(RuntimeException::class);
+        $this->expectException(InvalidStateException::class);
         $this->expectExceptionMessage('Reservation has expired.');
 
         $reservation->markAsPaid();
