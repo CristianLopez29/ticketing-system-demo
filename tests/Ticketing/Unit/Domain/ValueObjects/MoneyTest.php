@@ -75,4 +75,29 @@ class MoneyTest extends TestCase
         $this->assertTrue($money->isZero());
         $this->assertFalse($notZero->isZero());
     }
+
+    public function test_it_can_multiply(): void
+    {
+        $money = new Money(1000, 'USD');
+        $result = $money->multiply(1.5);
+
+        $this->assertEquals(1500, $result->amount());
+        $this->assertEquals('USD', $result->currency());
+    }
+
+    public function test_it_can_apply_discount_percent(): void
+    {
+        $money = new Money(1000, 'USD');
+        $result = $money->applyDiscountPercent(20);
+
+        $this->assertEquals(800, $result->amount());
+    }
+
+    public function test_it_rounds_correctly_when_multiplying(): void
+    {
+        $money = new Money(100, 'USD'); // $1.00
+        $result = $money->applyDiscountPercent(15); // 85 cents
+
+        $this->assertEquals(85, $result->amount());
+    }
 }

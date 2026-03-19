@@ -85,8 +85,7 @@ class PurchaseSeasonTicketUseCase
             }
 
             $result = $this->transactionManager->run(function () use ($request, $season, $events) {
-                $totalAmount = 0;
-                $currency = null;
+                $totalPrice = null;
                 $seatsToReserve = [];
 
                 foreach ($events as $event) {
@@ -104,18 +103,20 @@ class PurchaseSeasonTicketUseCase
                         throw new SeatAlreadySoldException("Seat {$request->row}-{$request->number} is already sold for event {$event->id()}");
                     }
 
-                    if ($currency === null) {
-                        $currency = $seat->price()->currency();
-                    } elseif ($currency !== $seat->price()->currency()) {
-                        throw new RuntimeException("Currency mismatch across events in season.");
+                    if ($totalPrice === null) {
+                        $totalPrice = $seat->price();
+                    } else {
+                        if ($totalPrice->currency() !== $seat->price()->currency()) {
+                            throw new RuntimeException("Currency mismatch across events in season.");
+                        }
+                        $totalPrice = $totalPrice->add($seat->price());
                     }
 
-                    $totalAmount += $seat->price()->amount();
                     $seatsToReserve[] = $seat;
                 }
 
                 $discountPercent = max(0, min(100, $this->seasonTicketDiscountPercent));
-                $discountedAmount = (int) ($totalAmount * (1 - ($discountPercent / 100)));
+                $discountedPrice = $totalPrice ? $totalPrice->applyDiscountPercent($discountPercent) : new Money(0, 'EUR');
 
                 $seasonTicket = new SeasonTicket(
                     $this->uuidGenerator->generate(),
@@ -123,7 +124,7 @@ class PurchaseSeasonTicketUseCase
                     $request->userId,
                     $request->row,
                     $request->number,
-                    new Money($discountedAmount, $currency ?? 'EUR'),
+                    $discountedPrice,
                     ReservationStatus::PENDING_PAYMENT,
                     new DateTimeImmutable('+15 minutes'),
                     new DateTimeImmutable
