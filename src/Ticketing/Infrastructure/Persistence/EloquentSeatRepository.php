@@ -1,6 +1,7 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1)
+;
 
 namespace Src\Ticketing\Infrastructure\Persistence;
 
@@ -17,7 +18,7 @@ class EloquentSeatRepository implements SeatRepository
         // Enforce pessimistic lock (SELECT ... FOR UPDATE)
         $record = DB::table('seats')->where('id', $id->value())->lockForUpdate()->first();
 
-        if (! $record) {
+        if (!$record) {
             return null;
         }
 
@@ -33,7 +34,7 @@ class EloquentSeatRepository implements SeatRepository
             ->lockForUpdate()
             ->first();
 
-        if (! $record) {
+        if (!$record) {
             return null;
         }
 
@@ -45,9 +46,9 @@ class EloquentSeatRepository implements SeatRepository
         DB::table('seats')
             ->where('id', $seat->id()->value())
             ->update([
-                'reserved_by_user_id' => $seat->reservedByUserId(),
-                'updated_at' => now(),
-            ]);
+            'reserved_by_user_id' => $seat->reservedByUserId(),
+            'updated_at' => now(),
+        ]);
 
         // Invalidate read model cache
         \Illuminate\Support\Facades\Cache::forget("event:{$seat->eventId()}:seats_read_model");
@@ -63,24 +64,24 @@ class EloquentSeatRepository implements SeatRepository
 
     private function mapToSeat(mixed $record): Seat
     {
-        $record = (array) $record;
+        $record = (array)$record;
         $reservedByUserIdValue = $record['reserved_by_user_id'] ?? null;
-        $reservedByUserId = is_numeric($reservedByUserIdValue) ? (int) $reservedByUserIdValue : null;
+        $reservedByUserId = is_numeric($reservedByUserIdValue) ? (int)$reservedByUserIdValue : null;
 
         $idValue = $record['id'] ?? null;
-        $id = is_numeric($idValue) ? (int) $idValue : 0;
+        $id = is_numeric($idValue) ? (int)$idValue : 0;
 
         $eventIdValue = $record['event_id'] ?? null;
-        $eventId = is_numeric($eventIdValue) ? (int) $eventIdValue : 0;
+        $eventId = is_numeric($eventIdValue) ? (int)$eventIdValue : 0;
 
         $rowValue = $record['row'] ?? null;
         $row = is_string($rowValue) ? $rowValue : '';
 
         $numberValue = $record['number'] ?? null;
-        $number = is_numeric($numberValue) ? (int) $numberValue : 0;
+        $number = is_numeric($numberValue) ? (int)$numberValue : 0;
 
         $priceAmountValue = $record['price_amount'] ?? null;
-        $priceAmount = is_numeric($priceAmountValue) ? (int) $priceAmountValue : 0;
+        $priceAmount = is_numeric($priceAmountValue) ? (int)$priceAmountValue : 0;
 
         $priceCurrencyValue = $record['price_currency'] ?? null;
         $priceCurrency = is_string($priceCurrencyValue) ? $priceCurrencyValue : 'EUR';
@@ -92,6 +93,6 @@ class EloquentSeatRepository implements SeatRepository
             $number,
             new Money($priceAmount, $priceCurrency),
             $reservedByUserId
-        );
+            );
     }
 }
