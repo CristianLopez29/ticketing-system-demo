@@ -11,11 +11,5 @@ abstract class TestCase extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
-
-        $user = User::factory()->create([
-            'role' => 'admin',
-        ]);
-
-        Sanctum::actingAs($user, ['*']);
     }
 }

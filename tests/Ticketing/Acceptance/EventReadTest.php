@@ -71,6 +71,9 @@ class EventReadTest extends TestCase
 
     public function test_can_fetch_event_stats(): void
     {
+        $admin = User::factory()->create(['role' => 'admin']);
+        \Laravel\Sanctum\Sanctum::actingAs($admin);
+
         // 1. Setup
         $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
         Redis::set("event:{$event->id}:stock", 50);
@@ -98,5 +101,20 @@ class EventReadTest extends TestCase
                 'available_stock_redis' => 50,
                 'integrity_check' => 'OK',
             ]);
+    }
+
+    public function test_event_stats_requires_auth(): void
+    {
+        $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
+        $this->getJson("/api/events/{$event->id}/stats")->assertStatus(401);
+    }
+
+    public function test_event_stats_requires_admin_role(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        \Laravel\Sanctum\Sanctum::actingAs($user);
+
+        $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
+        $this->getJson("/api/events/{$event->id}/stats")->assertStatus(403);
     }
 }
