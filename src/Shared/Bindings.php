@@ -10,14 +10,21 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Src\Shared\Domain\Audit\AuditLogger;
+use Src\Shared\Infrastructure\Audit\CompositeAuditLogger;
 use Src\Shared\Infrastructure\Audit\EloquentAuditLogger;
+use Src\Shared\Infrastructure\Audit\FileAuditLogger;
 use Symfony\Component\HttpFoundation\Response;
 
 class Bindings extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind(AuditLogger::class, EloquentAuditLogger::class);
+        $this->app->bind(AuditLogger::class, function () {
+            return new CompositeAuditLogger(
+                new EloquentAuditLogger(),
+                new FileAuditLogger()
+            );
+        });
     }
 
     public function boot(): void

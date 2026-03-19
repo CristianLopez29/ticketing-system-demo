@@ -11,10 +11,16 @@ use Src\Ticketing\Domain\ValueObjects\Money;
 class FakePaymentGateway implements PaymentGateway
 {
     private static bool $shouldFail = false;
+    private static bool $shouldFailRefund = false;
 
     public static function forceFailNextCharge(bool $fail = true): void
     {
         self::$shouldFail = $fail;
+    }
+
+    public static function forceFailNextRefund(bool $fail = true): void
+    {
+        self::$shouldFailRefund = $fail;
     }
 
     public function charge(int $userId, Money $amount): string
@@ -29,6 +35,10 @@ class FakePaymentGateway implements PaymentGateway
 
     public function refund(string $transactionId): void
     {
+        if (self::$shouldFailRefund) {
+            self::$shouldFailRefund = false;
+            throw new \RuntimeException('Refund declined by the bank.');
+        }
         // Simulate a refund
     }
 }
