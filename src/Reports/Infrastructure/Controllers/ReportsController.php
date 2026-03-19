@@ -5,11 +5,16 @@ declare(strict_types=1);
 namespace Src\Reports\Infrastructure\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Src\Reports\Application\UseCases\DownloadReportUseCase;
+use Src\Reports\Domain\Exceptions\ReportNotFoundException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportsController
 {
+    public function __construct(
+        private readonly DownloadReportUseCase $downloadReportUseCase
+    ) {}
+
     public function download(Request $request): StreamedResponse
     {
         $file = $request->query('file');
@@ -18,11 +23,10 @@ class ReportsController
             abort(400);
         }
 
-        $disk = Storage::disk('reports');
-        if (! $disk->exists($name)) {
+        try {
+            return $this->downloadReportUseCase->execute($name);
+        } catch (ReportNotFoundException $e) {
             abort(404);
         }
-
-        return $disk->download($name);
     }
 }
