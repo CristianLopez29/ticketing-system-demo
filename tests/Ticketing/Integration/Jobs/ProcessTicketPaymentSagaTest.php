@@ -85,10 +85,12 @@ class ProcessTicketPaymentSagaTest extends TestCase
         FakePaymentGateway::forceFailNextRefund(true);
 
         $job = new ProcessTicketPayment($reservationId);
-        
-        $this->expectException(\Exception::class);
-
-        app()->call([$job, 'handle']);
+        try {
+            app()->call([$job, 'handle']);
+            $this->fail('Expected an exception to be thrown, but none was.');
+        } catch (\Exception $e) {
+            // Exception is expected — continue to assertions below
+        }
 
         // Assert pending refund was created
         $this->assertDatabaseCount('pending_refunds', 1);

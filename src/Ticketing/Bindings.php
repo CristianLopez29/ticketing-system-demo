@@ -58,6 +58,14 @@ class Bindings extends ServiceProvider
         $this->app->bind(GetEventSeatsQueryHandler::class, LaravelGetEventSeatsQueryHandler::class);
         $this->app->bind(GetEventStatsQueryHandler::class, LaravelGetEventStatsQueryHandler::class);
 
+        $this->app->bind(\Psr\Clock\ClockInterface::class, function () {
+            return new class implements \Psr\Clock\ClockInterface {
+                public function now(): \DateTimeImmutable {
+                    return \Carbon\CarbonImmutable::now();
+                }
+            };
+        });
+
         $this->app->bind(ProcessTicketPaymentUseCase::class, function ($app) {
             return new ProcessTicketPaymentUseCase(
                 $app->make(ReservationRepository::class),
@@ -84,6 +92,7 @@ class Bindings extends ServiceProvider
                 $app->make(TransactionManager::class),
                 $app->make(IdempotencyStore::class),
                 $app->make(UuidGenerator::class),
+                $app->make(\Psr\Clock\ClockInterface::class),
                 $discount
             );
         });
