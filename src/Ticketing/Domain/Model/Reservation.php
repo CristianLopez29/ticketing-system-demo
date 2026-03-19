@@ -132,11 +132,9 @@ class Reservation extends AggregateRoot
     {
         $bytes = random_bytes(16);
 
-        // Set version to 4 (0100)
         $bytes[6] = chr((ord($bytes[6]) & 0x0F) | 0x40);
-        // Set variant to RFC 4122 (10xx)
         $bytes[8] = chr((ord($bytes[8]) & 0x3F) | 0x80);
 
-        return vsprintf('res_%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
     }
 }
