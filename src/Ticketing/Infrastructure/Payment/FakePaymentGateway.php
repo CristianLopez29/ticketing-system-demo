@@ -10,10 +10,17 @@ use Src\Ticketing\Domain\ValueObjects\Money;
 
 class FakePaymentGateway implements PaymentGateway
 {
+    private static bool $shouldFail = false;
+
+    public static function forceFailNextCharge(bool $fail = true): void
+    {
+        self::$shouldFail = $fail;
+    }
+
     public function charge(int $userId, Money $amount): string
     {
-        // Simulate random failure (10% chance)
-        if (random_int(1, 100) <= 10) {
+        if (self::$shouldFail) {
+            self::$shouldFail = false; // reset for next call
             throw new \RuntimeException('Payment declined by the bank.');
         }
 
