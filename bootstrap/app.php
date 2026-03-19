@@ -3,8 +3,13 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Src\Security\Infrastructure\Middleware\EnsureRole;
 use Src\Shared\Infrastructure\Middleware\SecurityHeaders;
+use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -21,5 +26,31 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->render(function (SeatAlreadySoldException $e, Request $request) {
+            if (! $request->expectsJson()) {
+                return null;
+            }
+
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_CONFLICT);
+        });
+
+        $exceptions->render(function (\InvalidArgumentException $e, Request $request) {
+            if (! $request->expectsJson()) {
+                return null;
+            }
+
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+        });
+
+        $exceptions->render(function (\RuntimeException $e, Request $request) {
+            if (! $request->expectsJson()) {
+                return null;
+            }
+
+            if ($e instanceof HttpExceptionInterface) {
+                return null;
+            }
+
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        });
     })->create();
