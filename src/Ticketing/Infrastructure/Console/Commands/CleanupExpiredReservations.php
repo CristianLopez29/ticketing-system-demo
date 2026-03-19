@@ -1,6 +1,7 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1)
+;
 
 namespace Src\Ticketing\Infrastructure\Console\Commands;
 
@@ -25,7 +26,8 @@ class CleanupExpiredReservations extends Command
         SeatRepository $ticketRepository,
         StockManager $stockManager,
         TransactionManager $transactionManager
-    ): int {
+        ): int
+    {
         $now = new DateTimeImmutable;
         $expiredReservations = $reservationRepository->findExpired($now);
 
@@ -45,7 +47,7 @@ class CleanupExpiredReservations extends Command
                     // Pessimistic lock to prevent race conditions with payment processing
                     $lockedReservation = $reservationRepository->findAndLock($reservation->id());
 
-                    if (! $lockedReservation) {
+                    if (!$lockedReservation) {
                         return false;
                     }
 
@@ -75,7 +77,8 @@ class CleanupExpiredReservations extends Command
                     $this->info("Cleaned up reservation: {$reservation->id()}");
                 }
 
-            } catch (Throwable $e) {
+            }
+            catch (Throwable $e) {
                 $this->error("Failed to cleanup reservation {$reservation->id()}: {$e->getMessage()}");
                 Log::error("Cleanup failed for reservation {$reservation->id()}", ['exception' => $e]);
             }
