@@ -49,7 +49,7 @@ class RedisStockManager implements StockManager
         }
 
         // Atomic Lua execution
-        $result = Redis::connection()->command('eval', [self::SCRIPT, [$key], 1]);
+        $result = Redis::eval(self::SCRIPT, 1, $key);
 
         return (bool) $result;
     }
