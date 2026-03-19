@@ -24,7 +24,7 @@ class RedisStockManager implements StockManager
         $key = "event:{$eventId}:stock";
 
         // Re-hydrate from DB if key is absent (Redis restart / key eviction)
-        if ((int) Redis::exists($key) === 0) {
+        if (Redis::get($key) === null) {
             $lockKey = "lock:rehydrate:{$eventId}";
             // Only one worker re-hydrates; others wait for the key to appear
             if (Redis::set($lockKey, '1', ['nx', 'ex' => 5])) {
@@ -37,6 +37,13 @@ class RedisStockManager implements StockManager
                 $maxAttempts = 10;
                 for ($i = 0; $i < $maxAttempts; $i++) {
                     usleep(30_000);
+                    if (Redis::get($key) !== null) {
+                        break;
+                    }
+                }
+
+                if (Redis::get($key) === null) {
+                    $this->rehydrateStockFromDatabase($eventId, $key);
                 }
             }
         }
