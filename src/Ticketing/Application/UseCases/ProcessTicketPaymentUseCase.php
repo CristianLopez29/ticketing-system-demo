@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Src\Ticketing\Application\UseCases;
 
 use Exception;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Src\Shared\Domain\Services\UuidGenerator;
 use Src\Ticketing\Application\Ports\StockManager;
@@ -13,7 +14,6 @@ use Src\Ticketing\Application\Ports\UserNotifier;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
 use Src\Ticketing\Domain\Model\Ticket;
 use Src\Ticketing\Domain\Ports\PaymentGateway;
-use Src\Ticketing\Domain\Repositories\PendingRefundRepository;
 use Src\Ticketing\Domain\Repositories\ReservationRepository;
 use Src\Ticketing\Domain\Repositories\SeatRepository;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
@@ -29,8 +29,7 @@ class ProcessTicketPaymentUseCase
         private readonly StockManager $stockManager,
         private readonly UserNotifier $userNotifier,
         private readonly UuidGenerator $uuidGenerator,
-        private readonly TransactionManager $transactionManager,
-        private readonly PendingRefundRepository $pendingRefundRepository
+        private readonly TransactionManager $transactionManager
     ) {}
 
     public function execute(string $reservationId): void
@@ -118,11 +117,13 @@ class ProcessTicketPaymentUseCase
                         'error' => $refundException->getMessage(),
                     ]);
 
-                    $this->pendingRefundRepository->save(
-                        $transactionId,
-                        $reservationId,
-                        'Failed to refund during saga compensation: ' . $refundException->getMessage()
-                    );
+                    DB::table('pending_refunds')->insert([
+                        'transaction_id' => $transactionId,
+                        'reservation_id' => $reservationId,
+                        'reason' => 'Failed to refund during saga compensation: ' . $refundException->getMessage(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
                 }
             }
 
