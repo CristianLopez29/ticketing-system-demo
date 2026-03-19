@@ -14,4 +14,6 @@ interface EventRepository
      * @return Event[]
      */
     public function findBySeasonId(int $seasonId): array;
+
+    public function save(Event $event): void;
 }
