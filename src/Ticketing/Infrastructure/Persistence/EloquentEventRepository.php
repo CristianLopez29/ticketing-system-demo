@@ -7,13 +7,9 @@ namespace Src\Ticketing\Infrastructure\Persistence;
 use Illuminate\Support\Facades\DB;
 use Src\Ticketing\Domain\Model\Event;
 use Src\Ticketing\Domain\Repositories\EventRepository;
-use Src\Ticketing\Application\Ports\StockManager;
 
 class EloquentEventRepository implements EventRepository
 {
-    public function __construct(
-        private readonly StockManager $stockManager
-    ) {}
 
     public function find(int $id): ?Event
     {
@@ -55,15 +51,11 @@ class EloquentEventRepository implements EventRepository
         DB::table('events')->updateOrInsert(
             ['id' => $event->id()],
             [
-                'name' => $event->name(),
+                'name'        => $event->name(),
                 'total_seats' => $event->totalSeats(),
-                'updated_at' => now(),
-                'created_at' => $isNew ? now() : DB::raw('created_at'),
+                'updated_at'  => now(),
+                'created_at'  => $isNew ? now() : DB::raw('created_at'),
             ]
         );
-
-        if ($isNew) {
-            $this->stockManager->setStock($event->id(), $event->totalSeats());
-        }
     }
 }
