@@ -51,17 +51,33 @@ class Ticket extends AggregateRoot
         return $this->id;
     }
 
-    public function toArray(): array
+    public function eventId(): int
     {
-        return [
-            'id' => $this->id,
-            'event_id' => $this->eventId,
-            'seat_id' => $this->seatId->value(),
-            'user_id' => $this->userId,
-            'price_amount' => $this->price->amount(),
-            'price_currency' => $this->price->currency(),
-            'payment_reference' => $this->paymentReference,
-            'issued_at' => $this->issuedAt->format(DateTimeImmutable::ATOM),
-        ];
+        return $this->eventId;
+    }
+
+    public function seatId(): SeatId
+    {
+        return $this->seatId;
+    }
+
+    public function userId(): int
+    {
+        return $this->userId;
+    }
+
+    public function price(): Money
+    {
+        return $this->price;
+    }
+
+    public function paymentReference(): string
+    {
+        return $this->paymentReference;
+    }
+
+    public function issuedAt(): DateTimeImmutable
+    {
+        return $this->issuedAt;
     }
 }

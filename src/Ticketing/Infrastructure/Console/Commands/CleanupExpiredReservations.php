@@ -6,11 +6,11 @@ namespace Src\Ticketing\Infrastructure\Console\Commands;
 
 use DateTimeImmutable;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
 use Src\Ticketing\Domain\Repositories\ReservationRepository;
 use Src\Ticketing\Application\Ports\StockManager;
+use Src\Ticketing\Application\Ports\TransactionManager;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
 use Throwable;
 
@@ -23,7 +23,8 @@ class CleanupExpiredReservations extends Command
     public function handle(
         ReservationRepository $reservationRepository,
         TicketRepository $ticketRepository,
-        StockManager $stockManager
+        StockManager $stockManager,
+        TransactionManager $transactionManager
     ): int {
         $now = new DateTimeImmutable;
         $expiredReservations = $reservationRepository->findExpired($now);
@@ -39,7 +40,7 @@ class CleanupExpiredReservations extends Command
 
         foreach ($expiredReservations as $reservation) {
             try {
-                $didCleanup = DB::transaction(function () use ($reservation, $reservationRepository, $ticketRepository, $stockManager): bool {
+                $didCleanup = $transactionManager->run(function () use ($reservation, $reservationRepository, $ticketRepository, $stockManager): bool {
                     // Atomic state verification
                     // Pessimistic lock to prevent race conditions with payment processing
                     $lockedReservation = $reservationRepository->findAndLock($reservation->id());

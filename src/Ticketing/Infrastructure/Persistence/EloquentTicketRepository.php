@@ -86,9 +86,18 @@ class EloquentTicketRepository implements TicketRepository
 
     public function saveTicket(Ticket $ticket): void
     {
-        $data = $ticket->toArray();
-        $data['created_at'] = now();
-        $data['updated_at'] = now();
+        $data = [
+            'id' => $ticket->id(),
+            'event_id' => $ticket->eventId(),
+            'seat_id' => $ticket->seatId()->value(),
+            'user_id' => $ticket->userId(),
+            'price_amount' => $ticket->price()->amount(),
+            'price_currency' => $ticket->price()->currency(),
+            'payment_reference' => $ticket->paymentReference(),
+            'issued_at' => $ticket->issuedAt()->format(\DateTimeImmutable::ATOM),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
 
         DB::table('tickets')->insert($data);
 
