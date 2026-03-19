@@ -7,6 +7,7 @@ namespace Src\Ticketing\Domain\Model;
 use DateTimeImmutable;
 use Src\Shared\Domain\AggregateRoot;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
+use Src\Ticketing\Domain\Exceptions\InvalidStateException;
 use Src\Ticketing\Domain\ValueObjects\Money;
 
 class SeasonTicket extends AggregateRoot
@@ -76,7 +77,7 @@ class SeasonTicket extends AggregateRoot
     public function pay(): void
     {
         if ($this->status !== ReservationStatus::PENDING_PAYMENT) {
-            throw new \RuntimeException('Cannot pay for a non-pending season ticket.');
+            throw new InvalidStateException('Cannot pay for a non-pending season ticket.');
         }
         $this->status = ReservationStatus::PAID;
     }
@@ -84,11 +85,11 @@ class SeasonTicket extends AggregateRoot
     public function cancel(): void
     {
         if ($this->status === ReservationStatus::PAID) {
-            throw new \RuntimeException('Cannot cancel a paid season ticket.');
+            throw new InvalidStateException('Cannot cancel a paid season ticket.');
         }
 
         if ($this->status === ReservationStatus::CANCELLED) {
-            throw new \RuntimeException('Season ticket is already cancelled.');
+            throw new InvalidStateException('Season ticket is already cancelled.');
         }
 
         $this->status = ReservationStatus::CANCELLED;
