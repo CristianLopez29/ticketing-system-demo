@@ -19,4 +19,9 @@ interface ReservationRepository
      * @return Reservation[]
      */
     public function findExpired(DateTimeImmutable $now): array;
+
+    /**
+     * @return Reservation[]
+     */
+    public function findExpiredChunked(DateTimeImmutable $now, int $limit, int $offset): array;
 }

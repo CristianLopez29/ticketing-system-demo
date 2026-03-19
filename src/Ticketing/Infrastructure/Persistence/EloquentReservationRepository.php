@@ -103,4 +103,35 @@ class EloquentReservationRepository implements ReservationRepository
 
         return $reservations;
     }
+
+    /**
+     * @return Reservation[]
+     */
+    public function findExpiredChunked(DateTimeImmutable $now, int $limit, int $offset): array
+    {
+        $records = DB::table('reservations')
+            ->where('status', ReservationStatus::PENDING_PAYMENT->value)
+            ->where('expires_at', '<=', $now)
+            ->orderBy('id')
+            ->limit($limit)
+            ->offset($offset)
+            ->get();
+
+        $reservations = [];
+        foreach ($records as $record) {
+            $data = (array) $record;
+            $reservations[] = new Reservation(
+                (string) ($data['id'] ?? ''),
+                (int) ($data['event_id'] ?? 0),
+                new SeatId((int) ($data['seat_id'] ?? 0)),
+                (int) ($data['user_id'] ?? 0),
+                ReservationStatus::from((string) ($data['status'] ?? ReservationStatus::PENDING_PAYMENT->value)),
+                new Money((int) ($data['price_amount'] ?? 0), (string) ($data['price_currency'] ?? 'EUR')),
+                new DateTimeImmutable((string) ($data['expires_at'] ?? 'now')),
+                new DateTimeImmutable((string) ($data['created_at'] ?? 'now'))
+            );
+        }
+
+        return $reservations;
+    }
 }

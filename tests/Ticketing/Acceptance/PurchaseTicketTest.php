@@ -75,7 +75,7 @@ class PurchaseTicketTest extends TestCase
         Event::assertNotDispatched(TicketSold::class);
 
         // Ensure Job was dispatched
-        Bus::assertDispatched(ProcessTicketPayment::class, function ($job) {
+        Bus::assertDispatched(ProcessTicketPayment::class , function ($job) {
             return true;
         });
     }
@@ -133,13 +133,16 @@ class PurchaseTicketTest extends TestCase
 
         Redis::set("event:{$event->id}:stock", 100);
 
-        // First attempt succeeds
-        $this->postJson('/api/tickets/purchase', [
+        // First attempt succeeds and stores the reservation ID
+        $first = $this->postJson('/api/tickets/purchase', [
             'event_id' => $event->id,
             'seat_id' => $seat->id,
         ], ['Idempotency-Key' => 'unique-req-123'])->assertStatus(202);
 
-        // Second attempt with exact same key fails
+        $firstReservationId = $first->json('reservation_id');
+
+        // Second attempt with the same idempotency key should return 202 and the same reservation ID
+        // (idempotent success — operation already completed, return stored result)
         $response = $this->postJson('/api/tickets/purchase', [
             'event_id' => $event->id,
             'seat_id' => $seat->id,
