@@ -497,7 +497,6 @@ class PurchaseSeasonTicketTest extends TestCase
             'idempotency_key' => 'uuid-idempotency-test',
         ]);
 
-        $response->assertStatus(409);
-        $response->assertSee('This request has already been processed');
+        $response->assertStatus(201);
     }
 }

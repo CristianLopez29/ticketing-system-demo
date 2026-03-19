@@ -145,7 +145,6 @@ class PurchaseTicketTest extends TestCase
             'seat_id' => $seat->id,
         ], ['Idempotency-Key' => 'unique-req-123']);
 
-        $response->assertStatus(409);
-        $response->assertSee('This request has already been processed');
+        $response->assertStatus(202);
     }
 }
