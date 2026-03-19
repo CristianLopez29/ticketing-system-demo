@@ -14,7 +14,6 @@ use Src\Ticketing\Application\Ports\TransactionManager;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
-use Src\Ticketing\Domain\Events\TicketSold;
 use Src\Ticketing\Domain\Model\Ticket;
 use Src\Ticketing\Domain\Ports\PaymentGateway;
 use Src\Ticketing\Domain\Ports\UserNotifier;
@@ -22,6 +21,7 @@ use Src\Ticketing\Domain\Repositories\ReservationRepository;
 use Src\Shared\Domain\Services\UuidGenerator;
 use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
+use Src\Ticketing\Application\Ports\EventDispatcher;
 use Throwable;
 
 class ProcessTicketPayment implements ShouldQueue
@@ -105,6 +105,11 @@ class ProcessTicketPayment implements ShouldQueue
                     $uuidGenerator->generate()
                 );
                 $ticketRepository->saveTicket($ticket);
+                
+                // Note: The event TicketSold is recorded in Ticket::issue and should be dispatched.
+                // We let saveTicket dispatch it if using EloquentTicketRepository,
+                // or we could explicitly pull and dispatch it here if the repo doesn't.
+                // In EloquentTicketRepository::saveTicket, it pulls and dispatches events.
             });
         } catch (Throwable $e) {
             Log::error('Payment processing failed after charge', [

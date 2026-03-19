@@ -16,19 +16,17 @@ class EloquentReservationRepository implements ReservationRepository
 {
     public function save(Reservation $reservation): void
     {
-        $data = $reservation->toArray();
-
         DB::table('reservations')->updateOrInsert(
             ['id' => $reservation->id()],
             [
-                'event_id' => $data['event_id'],
-                'seat_id' => $data['seat_id'],
-                'user_id' => $data['user_id'],
-                'status' => $data['status'],
-                'price_amount' => $data['price_amount'],
-                'price_currency' => $data['price_currency'],
-                'expires_at' => $data['expires_at'],
-                'created_at' => $data['created_at'],
+                'event_id' => $reservation->eventId(),
+                'seat_id' => $reservation->seatId()->value(),
+                'user_id' => $reservation->userId(),
+                'status' => $reservation->status()->value,
+                'price_amount' => $reservation->price()->amount(),
+                'price_currency' => $reservation->price()->currency(),
+                'expires_at' => $reservation->expiresAt()->format(\DateTimeImmutable::ATOM),
+                'created_at' => $reservation->createdAt()->format(\DateTimeImmutable::ATOM),
                 'updated_at' => now(),
             ]
         );

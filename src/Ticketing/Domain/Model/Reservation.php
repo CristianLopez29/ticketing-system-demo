@@ -120,20 +120,8 @@ class Reservation extends AggregateRoot
         $this->status = ReservationStatus::CANCELLED;
     }
 
-    public function toArray(): array
+    public function createdAt(): DateTimeImmutable
     {
-        return [
-            'id' => $this->id,
-            'event_id' => $this->eventId,
-            'seat_id' => $this->seatId->value(),
-            'user_id' => $this->userId,
-            'status' => $this->status->value,
-            'price_amount' => $this->price->amount(),
-            'price_currency' => $this->price->currency(),
-            'expires_at' => $this->expiresAt->format(DateTimeImmutable::ATOM),
-            'created_at' => $this->createdAt->format(DateTimeImmutable::ATOM),
-        ];
+        return $this->createdAt;
     }
-
-
 }

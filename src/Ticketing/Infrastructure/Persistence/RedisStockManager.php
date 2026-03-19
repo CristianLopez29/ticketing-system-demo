@@ -34,9 +34,9 @@ class RedisStockManager implements StockManager
                     Redis::del($lockKey);
                 }
             } else {
-                $maxAttempts = 10;
+                $maxAttempts = 30; // Increased attempts
                 for ($i = 0; $i < $maxAttempts; $i++) {
-                    usleep(30_000);
+                    usleep(100_000); // 100ms
                     if (Redis::get($key) !== null) {
                         break;
                     }
