@@ -12,6 +12,7 @@ readonly class TicketSold implements DomainEvent
     private \DateTimeImmutable $occurredOn;
 
     public function __construct(
+        public int $eventId,
         public SeatId $seatId,
         public int $userId
     ) {
