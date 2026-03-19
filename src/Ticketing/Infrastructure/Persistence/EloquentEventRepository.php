@@ -7,7 +7,7 @@ namespace Src\Ticketing\Infrastructure\Persistence;
 use Illuminate\Support\Facades\DB;
 use Src\Ticketing\Domain\Model\Event;
 use Src\Ticketing\Domain\Repositories\EventRepository;
-use Src\Ticketing\Domain\Repositories\StockManager;
+use Src\Ticketing\Application\Ports\StockManager;
 
 class EloquentEventRepository implements EventRepository
 {

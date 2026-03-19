@@ -6,7 +6,7 @@ namespace Src\Ticketing\Infrastructure\Persistence;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
-use Src\Ticketing\Domain\Repositories\StockManager;
+use Src\Ticketing\Application\Ports\StockManager;
 
 class RedisStockManager implements StockManager
 {
