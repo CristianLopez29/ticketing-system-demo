@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Src\Ticketing\Domain\Ports;
+namespace Src\Ticketing\Application\Ports;
 
 interface UserNotifier
 {

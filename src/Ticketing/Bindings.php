@@ -11,15 +11,17 @@ use Src\Ticketing\Application\Ports\AsyncDispatcher;
 use Src\Ticketing\Application\Ports\IdempotencyStore;
 use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Application\Ports\TransactionManager;
+use Src\Ticketing\Application\Ports\UserNotifier;
 use Src\Ticketing\Application\Queries\GetEventSeatsQueryHandler;
 use Src\Ticketing\Application\Queries\GetEventStatsQueryHandler;
+use Src\Ticketing\Application\UseCases\ProcessTicketPaymentUseCase;
 use Src\Ticketing\Application\UseCases\PurchaseSeasonTicketUseCase;
 use Src\Ticketing\Domain\Ports\PaymentGateway;
-use Src\Ticketing\Domain\Ports\UserNotifier;
 use Src\Ticketing\Domain\Repositories\EventRepository;
 use Src\Ticketing\Domain\Repositories\ReservationRepository;
 use Src\Ticketing\Domain\Repositories\SeasonRepository;
 use Src\Ticketing\Domain\Repositories\SeasonTicketRepository;
+use Src\Ticketing\Domain\Repositories\SeatRepository;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
 use Src\Ticketing\Infrastructure\Console\Commands\CleanupExpiredReservations;
 use Src\Ticketing\Infrastructure\Jobs\LaravelAsyncDispatcher;
@@ -29,6 +31,7 @@ use Src\Ticketing\Infrastructure\Persistence\EloquentEventRepository;
 use Src\Ticketing\Infrastructure\Persistence\EloquentReservationRepository;
 use Src\Ticketing\Infrastructure\Persistence\EloquentSeasonRepository;
 use Src\Ticketing\Infrastructure\Persistence\EloquentSeasonTicketRepository;
+use Src\Ticketing\Infrastructure\Persistence\EloquentSeatRepository;
 use Src\Ticketing\Infrastructure\Persistence\EloquentTicketRepository;
 use Src\Ticketing\Infrastructure\Persistence\LaravelTransactionManager;
 use Src\Ticketing\Infrastructure\Persistence\RedisIdempotencyStore;
@@ -45,6 +48,7 @@ class Bindings extends ServiceProvider
         $this->app->bind(SeasonTicketRepository::class, EloquentSeasonTicketRepository::class);
         $this->app->bind(EventRepository::class, EloquentEventRepository::class);
         $this->app->bind(ReservationRepository::class, EloquentReservationRepository::class);
+        $this->app->bind(SeatRepository::class, EloquentSeatRepository::class);
         $this->app->bind(StockManager::class, RedisStockManager::class);
         $this->app->bind(IdempotencyStore::class, RedisIdempotencyStore::class);
         $this->app->bind(UuidGenerator::class, PhpUuidGenerator::class);
@@ -54,6 +58,19 @@ class Bindings extends ServiceProvider
         $this->app->bind(GetEventSeatsQueryHandler::class, LaravelGetEventSeatsQueryHandler::class);
         $this->app->bind(GetEventStatsQueryHandler::class, LaravelGetEventStatsQueryHandler::class);
 
+        $this->app->bind(ProcessTicketPaymentUseCase::class, function ($app) {
+            return new ProcessTicketPaymentUseCase(
+                $app->make(ReservationRepository::class),
+                $app->make(TicketRepository::class),
+                $app->make(SeatRepository::class),
+                $app->make(PaymentGateway::class),
+                $app->make(StockManager::class),
+                $app->make(UserNotifier::class),
+                $app->make(UuidGenerator::class),
+                $app->make(TransactionManager::class)
+            );
+        });
+
         $this->app->bind(PurchaseSeasonTicketUseCase::class, function ($app) {
             $discountValue = config('ticketing.season_ticket_discount', 20);
             $discount = is_int($discountValue) ? $discountValue : (is_numeric($discountValue) ? (int) $discountValue : 20);
@@ -61,7 +78,7 @@ class Bindings extends ServiceProvider
             return new PurchaseSeasonTicketUseCase(
                 $app->make(SeasonRepository::class),
                 $app->make(EventRepository::class),
-                $app->make(TicketRepository::class),
+                $app->make(SeatRepository::class),
                 $app->make(SeasonTicketRepository::class),
                 $app->make(StockManager::class),
                 $app->make(TransactionManager::class),

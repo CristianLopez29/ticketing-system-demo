@@ -18,7 +18,7 @@ use Src\Ticketing\Domain\Model\SeasonTicket;
 use Src\Ticketing\Domain\Repositories\EventRepository;
 use Src\Ticketing\Domain\Repositories\SeasonRepository;
 use Src\Ticketing\Domain\Repositories\SeasonTicketRepository;
-use Src\Ticketing\Domain\Repositories\TicketRepository;
+use Src\Ticketing\Domain\Repositories\SeatRepository;
 use Src\Ticketing\Domain\ValueObjects\Money;
 
 class PurchaseSeasonTicketUseCase
@@ -26,7 +26,7 @@ class PurchaseSeasonTicketUseCase
     public function __construct(
         private readonly SeasonRepository $seasonRepository,
         private readonly EventRepository $eventRepository,
-        private readonly TicketRepository $ticketRepository,
+        private readonly SeatRepository $ticketRepository,
         private readonly SeasonTicketRepository $seasonTicketRepository,
         private readonly StockManager $stockManager,
         private readonly TransactionManager $transactionManager,
