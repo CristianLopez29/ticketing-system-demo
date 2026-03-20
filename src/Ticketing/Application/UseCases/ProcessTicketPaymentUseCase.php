@@ -5,15 +5,16 @@ declare(strict_types=1);
 namespace Src\Ticketing\Application\UseCases;
 
 use Exception;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Psr\Log\LoggerInterface;
 use Src\Shared\Domain\Services\UuidGenerator;
 use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Application\Ports\TransactionManager;
 use Src\Ticketing\Application\Ports\UserNotifier;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
+use Src\Ticketing\Domain\Model\Reservation;
 use Src\Ticketing\Domain\Model\Ticket;
 use Src\Ticketing\Domain\Ports\PaymentGateway;
+use Src\Ticketing\Domain\Repositories\PendingRefundRepository;
 use Src\Ticketing\Domain\Repositories\ReservationRepository;
 use Src\Ticketing\Domain\Repositories\SeatRepository;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
@@ -29,7 +30,9 @@ class ProcessTicketPaymentUseCase
         private readonly StockManager $stockManager,
         private readonly UserNotifier $userNotifier,
         private readonly UuidGenerator $uuidGenerator,
-        private readonly TransactionManager $transactionManager
+        private readonly TransactionManager $transactionManager,
+        private readonly PendingRefundRepository $pendingRefundRepository,
+        private readonly LoggerInterface $logger
     ) {}
 
     public function execute(string $reservationId): void
@@ -48,10 +51,10 @@ class ProcessTicketPaymentUseCase
         try {
             $transactionId = $this->paymentGateway->charge($reservation->userId(), $reservation->price());
         } catch (Throwable $e) {
-            Log::warning('Payment gateway charge failed', [
+            $this->logger->warning('Payment gateway charge failed', [
                 'reservation_id' => $reservationId,
-                'user_id' => $reservation->userId(),
-                'error' => $e->getMessage(),
+                'user_id'        => $reservation->userId(),
+                'error'          => $e->getMessage(),
             ]);
 
             throw $e;
@@ -79,67 +82,78 @@ class ProcessTicketPaymentUseCase
                 $this->ticketRepository->saveTicket($ticket);
             });
         } catch (Throwable $e) {
-            Log::error('Payment processing failed after charge', [
+            $this->logger->error('Payment processing failed after charge', [
                 'reservation_id' => $reservationId,
-                'error' => $e->getMessage(),
+                'error'          => $e->getMessage(),
             ]);
 
-            $this->transactionManager->run(function () use ($reservationId) {
-                $lockedReservation = $this->reservationRepository->findAndLock($reservationId);
+            $this->compensate($reservationId, $transactionId ?? null, $e, $reservation);
 
-                if (! $lockedReservation) {
-                    return;
-                }
-
-                if ($lockedReservation->status() !== ReservationStatus::PENDING_PAYMENT) {
-                    return;
-                }
-
-                $lockedReservation->cancel();
-                $this->reservationRepository->save($lockedReservation);
-
-                $seat = $this->seatRepository->findAndLock($lockedReservation->seatId());
-                if ($seat && $seat->reservedByUserId() === $lockedReservation->userId()) {
-                    $seat->release();
-                    $this->seatRepository->save($seat);
-                }
-
-                $this->stockManager->revertReservation($lockedReservation->eventId());
-            });
-
-            if (isset($transactionId)) {
-                try {
-                    $this->paymentGateway->refund($transactionId);
-                } catch (Throwable $refundException) {
-                    Log::error('Failed to refund after DB failure', [
-                        'transaction_id' => $transactionId,
-                        'reservation_id' => $reservationId,
-                        'error' => $refundException->getMessage(),
-                    ]);
-
-                    DB::table('pending_refunds')->insert([
-                        'transaction_id' => $transactionId,
-                        'reservation_id' => $reservationId,
-                        'reason' => 'Failed to refund during saga compensation: ' . $refundException->getMessage(),
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
-            }
-
-            try {
-                $this->userNotifier->notifyPaymentFailed(
-                    $reservation->userId(),
-                    $reservationId,
-                    $e->getMessage()
-                );
-            } catch (Throwable $notifyError) {
-                Log::warning('Failed to notify user of payment failure', [
-                    'reservation_id' => $reservationId,
-                    'error' => $notifyError->getMessage(),
-                ]);
-            }
             throw $e;
+        }
+    }
+
+    /**
+     * Saga compensation: revertes all side-effects when DB commit fails after a successful charge.
+     */
+    private function compensate(
+        string $reservationId,
+        ?string $transactionId,
+        Throwable $originalError,
+        Reservation $reservation
+    ): void {
+        $this->transactionManager->run(function () use ($reservationId) {
+            $lockedReservation = $this->reservationRepository->findAndLock($reservationId);
+
+            if (! $lockedReservation) {
+                return;
+            }
+
+            if ($lockedReservation->status() !== ReservationStatus::PENDING_PAYMENT) {
+                return;
+            }
+
+            $lockedReservation->cancel();
+            $this->reservationRepository->save($lockedReservation);
+
+            $seat = $this->seatRepository->findAndLock($lockedReservation->seatId());
+            if ($seat && $seat->reservedByUserId() === $lockedReservation->userId()) {
+                $seat->release();
+                $this->seatRepository->save($seat);
+            }
+
+            $this->stockManager->revertReservation($lockedReservation->eventId());
+        });
+
+        if ($transactionId !== null) {
+            try {
+                $this->paymentGateway->refund($transactionId);
+            } catch (Throwable $refundException) {
+                $this->logger->error('Failed to refund after DB failure', [
+                    'transaction_id' => $transactionId,
+                    'reservation_id' => $reservationId,
+                    'error'          => $refundException->getMessage(),
+                ]);
+
+                $this->pendingRefundRepository->save(
+                    $transactionId,
+                    $reservationId,
+                    'Failed to refund during saga compensation: ' . $refundException->getMessage()
+                );
+            }
+        }
+
+        try {
+            $this->userNotifier->notifyPaymentFailed(
+                $reservation->userId(),
+                $reservationId,
+                $originalError->getMessage()
+            );
+        } catch (Throwable $notifyError) {
+            $this->logger->warning('Failed to notify user of payment failure', [
+                'reservation_id' => $reservationId,
+                'error'          => $notifyError->getMessage(),
+            ]);
         }
     }
 }
