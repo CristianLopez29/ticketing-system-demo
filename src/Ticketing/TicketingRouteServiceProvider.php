@@ -26,7 +26,7 @@ class TicketingRouteServiceProvider extends ServiceProvider
                 Route::get('/events/{id}/stats', [EventController::class, 'getStats']);
             });
 
-        Route::middleware(['api', 'auth:sanctum'])
+        Route::middleware(['api', 'auth:sanctum', 'throttle:60,1'])
             ->prefix('api')
             ->group(function () {
                 Route::post('/tickets/purchase', PurchaseTicketController::class);
