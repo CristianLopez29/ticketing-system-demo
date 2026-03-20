@@ -17,7 +17,15 @@ class Season extends AggregateRoot
         private readonly ?int $previousSeasonId = null,
         private readonly ?DateTimeImmutable $renewalStartDate = null,
         private readonly ?DateTimeImmutable $renewalEndDate = null
-    ) {}
+    ) {
+        if ($endDate <= $startDate) {
+            throw new \InvalidArgumentException('Season end date must be after start date.');
+        }
+
+        if ($renewalStartDate !== null && $renewalEndDate !== null && $renewalEndDate <= $renewalStartDate) {
+            throw new \InvalidArgumentException('Season renewal end date must be after renewal start date.');
+        }
+    }
 
     public function id(): int
     {

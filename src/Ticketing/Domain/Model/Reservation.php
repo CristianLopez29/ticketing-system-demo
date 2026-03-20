@@ -8,8 +8,10 @@ use DateTimeImmutable;
 use RuntimeException;
 use Src\Shared\Domain\AggregateRoot;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
-use Src\Ticketing\Domain\Exceptions\ReservationAlreadyPaidException;
+use Src\Ticketing\Domain\Events\ReservationCancelled;
+use Src\Ticketing\Domain\Events\ReservationPaid;
 use Src\Ticketing\Domain\Exceptions\InvalidStateException;
+use Src\Ticketing\Domain\Exceptions\ReservationAlreadyPaidException;
 use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Domain\ValueObjects\SeatId;
 
@@ -102,6 +104,7 @@ class Reservation extends AggregateRoot
         }
 
         $this->status = ReservationStatus::PAID;
+        $this->record(new ReservationPaid($this->id, $this->eventId, $this->seatId, $this->userId));
     }
 
     /**
@@ -118,6 +121,7 @@ class Reservation extends AggregateRoot
         }
 
         $this->status = ReservationStatus::CANCELLED;
+        $this->record(new ReservationCancelled($this->id, $this->eventId, $this->seatId));
     }
 
     public function createdAt(): DateTimeImmutable

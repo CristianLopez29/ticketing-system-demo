@@ -45,6 +45,10 @@ readonly class Money
             throw new InvalidArgumentException('Cannot subtract money with different currencies.');
         }
 
+        if ($this->amount < $other->amount()) {
+            throw new InvalidArgumentException('Cannot subtract: result would be negative.');
+        }
+
         return new self($this->amount - $other->amount(), $this->currency);
     }
 
