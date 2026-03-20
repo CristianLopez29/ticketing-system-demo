@@ -1,7 +1,7 @@
 <?php
 
-declare(strict_types = 1)
-;
+declare(strict_types=1);
+
 
 namespace Tests\Ticketing\Integration\Jobs;
 
@@ -25,7 +25,13 @@ class ProcessTicketPaymentSagaTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Redis::flushall();
+        // Only flush keys used by this test namespace to avoid destroying shared Redis data in CI
+        foreach (Redis::keys('event:*:stock') as $key) {
+            Redis::del($key);
+        }
+        foreach (Redis::keys('purchase:idempotency:*') as $key) {
+            Redis::del($key);
+        }
     }
 
     public function test_it_compensates_and_records_pending_refund_if_refund_fails_after_db_error(): void
@@ -81,9 +87,9 @@ class ProcessTicketPaymentSagaTest extends TestCase
             }
         };
         $gateway->resId = $reservationId;
-        $this->app->instance(\Src\Ticketing\Domain\Ports\PaymentGateway::class , $gateway);
-
-        FakePaymentGateway::forceFailNextRefund(true);
+        // Force refund to fail so the pending_refund record is written
+        $gateway->forceFailNextRefund();
+        $this->app->instance(\Src\Ticketing\Domain\Ports\PaymentGateway::class, $gateway);
 
         $job = new ProcessTicketPayment($reservationId);
         try {

@@ -13,7 +13,7 @@ class FakePaymentGatewayTest extends TestCase
 {
     public function test_it_processes_payment_successfully(): void
     {
-        $gateway = new FakePaymentGateway();
+        $gateway       = new FakePaymentGateway();
         $transactionId = $gateway->charge(1, new Money(100, 'USD'));
 
         $this->assertStringStartsWith('fake_txn_', $transactionId);
@@ -21,8 +21,7 @@ class FakePaymentGatewayTest extends TestCase
 
     public function test_it_can_be_forced_to_fail(): void
     {
-        FakePaymentGateway::forceFailNextCharge(true);
-        $gateway = new FakePaymentGateway();
+        $gateway = (new FakePaymentGateway())->forceFailNextCharge();
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Payment declined by the bank.');
@@ -32,15 +31,15 @@ class FakePaymentGatewayTest extends TestCase
 
     public function test_it_resets_failure_state_after_failing(): void
     {
-        FakePaymentGateway::forceFailNextCharge(true);
-        $gateway = new FakePaymentGateway();
+        $gateway = (new FakePaymentGateway())->forceFailNextCharge();
 
         try {
             $gateway->charge(1, new Money(100, 'USD'));
         } catch (RuntimeException $e) {
-            // Expected
+            // Expected — shouldFail is reset to false inside charge()
         }
 
+        // Second charge on the same instance should succeed
         $transactionId = $gateway->charge(1, new Money(100, 'USD'));
         $this->assertStringStartsWith('fake_txn_', $transactionId);
     }

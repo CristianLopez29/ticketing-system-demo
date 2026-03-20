@@ -1,7 +1,7 @@
 <?php
 
-declare(strict_types = 1)
-;
+declare(strict_types=1);
+
 
 namespace Tests\Ticketing\Integration\Jobs;
 
@@ -24,8 +24,17 @@ class RealQueueWorkerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Redis::flushall();
+        // Only flush keys used by this test namespace to avoid destroying shared Redis data in CI
+        foreach (Redis::keys('event:*:stock') as $key) {
+            Redis::del($key);
+        }
         config(['queue.default' => 'database']);
+    }
+
+    protected function tearDown(): void
+    {
+        config(['queue.default' => 'sync']);
+        parent::tearDown();
     }
 
     public function test_job_can_be_processed_by_real_worker(): void

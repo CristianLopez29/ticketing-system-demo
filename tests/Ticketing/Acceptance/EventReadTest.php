@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Ticketing\Acceptance;
 
 use App\Models\User;
@@ -17,7 +19,13 @@ class EventReadTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Redis::flushall();
+        // Only flush keys used by this test namespace to avoid destroying shared Redis data in CI
+        foreach (Redis::keys('event:*:stock') as $key) {
+            Redis::del($key);
+        }
+        foreach (Redis::keys('event:*:seats_read_model') as $key) {
+            Redis::del($key);
+        }
     }
 
     public function test_can_fetch_seats_availability(): void
