@@ -4,29 +4,32 @@ declare(strict_types=1);
 
 namespace Src\Ticketing\Infrastructure\Payment;
 
-use RuntimeException;
 use Src\Ticketing\Domain\Ports\PaymentGateway;
 use Src\Ticketing\Domain\ValueObjects\Money;
 
 class FakePaymentGateway implements PaymentGateway
 {
-    private static bool $shouldFail = false;
-    private static bool $shouldFailRefund = false;
+    private bool $shouldFail = false;
+    private bool $shouldFailRefund = false;
 
-    public static function forceFailNextCharge(bool $fail = true): void
+    public function forceFailNextCharge(): self
     {
-        self::$shouldFail = $fail;
+        $this->shouldFail = true;
+
+        return $this;
     }
 
-    public static function forceFailNextRefund(bool $fail = true): void
+    public function forceFailNextRefund(): self
     {
-        self::$shouldFailRefund = $fail;
+        $this->shouldFailRefund = true;
+
+        return $this;
     }
 
     public function charge(int $userId, Money $amount): string
     {
-        if (self::$shouldFail) {
-            self::$shouldFail = false; // reset for next call
+        if ($this->shouldFail) {
+            $this->shouldFail = false; // reset for next call
             throw new \RuntimeException('Payment declined by the bank.');
         }
 
@@ -35,8 +38,8 @@ class FakePaymentGateway implements PaymentGateway
 
     public function refund(string $transactionId): void
     {
-        if (self::$shouldFailRefund) {
-            self::$shouldFailRefund = false;
+        if ($this->shouldFailRefund) {
+            $this->shouldFailRefund = false;
             throw new \RuntimeException('Refund declined by the bank.');
         }
         // Simulate a refund
