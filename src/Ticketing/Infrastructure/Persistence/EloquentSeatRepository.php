@@ -46,12 +46,11 @@ class EloquentSeatRepository implements SeatRepository
         DB::table('seats')
             ->where('id', $seat->id()->value())
             ->update([
-            'reserved_by_user_id' => $seat->reservedByUserId(),
-            'updated_at' => now(),
-        ]);
-
-        // Invalidate read model cache
-        \Illuminate\Support\Facades\Cache::forget("event:{$seat->eventId()}:seats_read_model");
+                'reserved_by_user_id' => $seat->reservedByUserId(),
+                'updated_at'          => now(),
+            ]);
+        // Cache invalidation is handled by the InvalidateSeatsCacheOnTicketSold listener
+        // after the TicketSold domain event is dispatched, ensuring consistency on rollback.
     }
 
     public function countAvailableForEvent(int $eventId): int
