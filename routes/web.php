@@ -7,5 +7,5 @@ Route::get('/', function () {
 });
 
 Route::get('/login', function () {
-    return view('login');
+    return response()->json(['message' => 'Use POST /api/login'], 405);
 })->name('login');
