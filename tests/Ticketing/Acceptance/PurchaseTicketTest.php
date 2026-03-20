@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Ticketing\Acceptance;
 
 use App\Models\User;
@@ -22,7 +24,13 @@ class PurchaseTicketTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Redis::flushall();
+        // Only flush keys used by this test namespace to avoid destroying shared Redis data in CI
+        foreach (Redis::keys('event:*:stock') as $key) {
+            Redis::del($key);
+        }
+        foreach (Redis::keys('purchase:idempotency:*') as $key) {
+            Redis::del($key);
+        }
     }
 
     public function test_successfully_initiates_purchase_saga(): void
@@ -55,6 +63,14 @@ class PurchaseTicketTest extends TestCase
         $response->assertStatus(202)
             ->assertJson(['message' => 'Purchase processing started. You will receive a confirmation shortly.']);
 
+        // reservation_id must be present and be a valid UUID v4
+        $reservationId = $response->json('reservation_id');
+        $this->assertNotNull($reservationId);
+        $this->assertMatchesRegularExpression(
+            '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i',
+            (string) $reservationId,
+            'reservation_id should be a valid UUID v4'
+        );
         $this->assertDatabaseHas('seats', [
             'id' => $seat->id,
             'reserved_by_user_id' => $user->id, // Locked

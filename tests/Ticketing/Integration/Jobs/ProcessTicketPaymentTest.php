@@ -22,7 +22,10 @@ class ProcessTicketPaymentTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Redis::flushall();
+        // Only flush keys used by this test namespace to avoid destroying shared Redis data in CI
+        foreach (Redis::keys('event:*:stock') as $key) {
+            Redis::del($key);
+        }
     }
 
     public function test_it_processes_payment_and_creates_ticket(): void
