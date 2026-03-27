@@ -118,7 +118,7 @@ class PurchaseSeasonTicketUseCase
                         $totalPrice = $seat->price();
                     } else {
                         if ($totalPrice->currency() !== $seat->price()->currency()) {
-                            throw new RuntimeException("Currency mismatch across events in season.");
+                            throw new InvalidArgumentException("Currency mismatch across events in season.");
                         }
                         $totalPrice = $totalPrice->add($seat->price());
                     }
