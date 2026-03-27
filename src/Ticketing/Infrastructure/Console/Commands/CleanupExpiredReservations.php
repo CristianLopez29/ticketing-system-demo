@@ -27,9 +27,9 @@ class CleanupExpiredReservations extends Command
         StockManager $stockManager,
         TransactionManager $transactionManager
     ): int {
-        $now           = new DateTimeImmutable();
-        $limit         = 100;
-        $total         = 0;
+        $now            = new DateTimeImmutable();
+        $limit          = 100;
+        $total          = 0;
         $afterCreatedAt = null;
         $afterId        = null;
 

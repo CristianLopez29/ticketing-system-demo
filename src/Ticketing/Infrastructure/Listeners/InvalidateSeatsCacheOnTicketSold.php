@@ -11,6 +11,6 @@ class InvalidateSeatsCacheOnTicketSold
 {
     public function handle(TicketSold $event): void
     {
-        Cache::forget("event:{$event->eventId}:seats_read_model");
+        Cache::tags(["event:{$event->eventId}"])->flush();
     }
 }
