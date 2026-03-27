@@ -6,6 +6,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Src\Security\Infrastructure\Middleware\EnsureRole;
+use Src\Shared\Infrastructure\Middleware\CorrelationId;
 use Src\Shared\Infrastructure\Middleware\SecurityHeaders;
 use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->append(CorrelationId::class);
         $middleware->append(SecurityHeaders::class);
 
         $middleware->alias([
