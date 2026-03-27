@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Application\Ports\TransactionManager;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
+use Src\Ticketing\Domain\Model\Reservation;
 use Src\Ticketing\Domain\Repositories\ReservationRepository;
 use Src\Ticketing\Domain\Repositories\SeatRepository;
 use Throwable;
@@ -26,13 +27,14 @@ class CleanupExpiredReservations extends Command
         StockManager $stockManager,
         TransactionManager $transactionManager
     ): int {
-        $now             = new DateTimeImmutable();
-        $limit           = 100;
-        $lastProcessedId = '';
-        $total           = 0;
+        $now            = new DateTimeImmutable();
+        $limit          = 100;
+        $total          = 0;
+        $afterCreatedAt = null;
+        $afterId        = null;
 
         while (true) {
-            $batch = $reservationRepository->findExpiredChunked($now, $limit, $lastProcessedId);
+            $batch = $reservationRepository->findExpiredChunked($now, $limit, $afterCreatedAt, $afterId);
 
             if (empty($batch)) {
                 break;
@@ -77,10 +79,13 @@ class CleanupExpiredReservations extends Command
                     $this->error("Failed to cleanup reservation {$reservation->id()}: {$e->getMessage()}");
                     Log::error("Cleanup failed for reservation {$reservation->id()}", ['exception' => $e]);
                 }
-
-                // Advance cursor — even if the reservation failed, move past it to avoid infinite loops
-                $lastProcessedId = $reservation->id();
             }
+
+            // Advance cursor to the last record of this batch
+            /** @var Reservation $last */
+            $last           = end($batch);
+            $afterCreatedAt = $last->createdAt()->format(DateTimeImmutable::ATOM);
+            $afterId        = $last->id();
         }
 
         if ($total === 0) {
