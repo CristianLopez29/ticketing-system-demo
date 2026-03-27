@@ -1,0 +1,554 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Ticketing System API",
+        "description": "REST API for the Ticketing System — single-event ticket purchases, season ticket reservations, event management, and health probes.\\n\\n**Authentication:** All protected endpoints require a Bearer token obtained via `POST /api/login`. Pass it as `Authorization: Bearer {token}`.\\n\\n**Idempotency:** Purchase endpoints require an `Idempotency-Key` header (UUID recommended) to prevent duplicate charges on retries.",
+        "contact": {
+            "name": "Ticketing Team",
+            "email": "admin@example.com"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost",
+            "description": "Demo API Server"
+        }
+    ],
+    "paths": {
+        "/api/events/{id}/seats": {
+            "get": {
+                "tags": [
+                    "Events"
+                ],
+                "summary": "List seat availability for an event",
+                "description": "Returns a paginated cursor-based list of seats with their availability status. Use `next_cursor` as the `after_seat_id` parameter on the next request to load more. Results are cached for 5 minutes.",
+                "operationId": "c973e65adc4bca874a93c91d2070df67",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Event ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "after_seat_id",
+                        "in": "query",
+                        "description": "Cursor: fetch seats with ID greater than this value (for pagination)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 0
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of seats per page (1–500, default 100)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 500,
+                            "minimum": 1,
+                            "example": 100
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of seats",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 42
+                                                    },
+                                                    "row": {
+                                                        "type": "string",
+                                                        "example": "A"
+                                                    },
+                                                    "number": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "price": {
+                                                        "properties": {
+                                                            "amount": {
+                                                                "type": "integer",
+                                                                "example": 5000
+                                                            },
+                                                            "currency": {
+                                                                "type": "string",
+                                                                "example": "EUR"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    },
+                                                    "status": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "available",
+                                                            "sold"
+                                                        ],
+                                                        "example": "available"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "next_cursor": {
+                                            "description": "Pass this as after_seat_id to fetch the next page; null means no more pages",
+                                            "type": "integer",
+                                            "example": 142,
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/events/{id}/stats": {
+            "get": {
+                "tags": [
+                    "Events"
+                ],
+                "summary": "Event statistics (admin)",
+                "description": "Returns real-time stock counters from Redis alongside sold-seat counts from the database. Includes an integrity check flag. Rate limited: 10 requests/minute per admin.",
+                "operationId": "42666084f53463fa2be6cfa4df4b13dc",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Event ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event statistics",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "total_seats": {
+                                            "type": "integer",
+                                            "example": 100
+                                        },
+                                        "sold_seats_db": {
+                                            "type": "integer",
+                                            "example": 42
+                                        },
+                                        "available_stock_redis": {
+                                            "type": "integer",
+                                            "example": 58
+                                        },
+                                        "integrity_check": {
+                                            "type": "string",
+                                            "enum": [
+                                                "OK",
+                                                "DRIFT"
+                                            ],
+                                            "example": "OK"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — requires admin role"
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded (10 req/min)"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/season-tickets/{id}/pay": {
+            "post": {
+                "tags": [
+                    "Season Tickets"
+                ],
+                "summary": "Confirm payment for a season ticket",
+                "description": "Transitions a `pending_payment` season ticket to `paid` status and emits a `SeasonTicketPaid` domain event. Must be called by the authenticated user who owns the ticket.",
+                "operationId": "c942e0a2f4b5c2983cd62ac31bb6e95a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Season ticket UUID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "example": "550e8400-e29b-41d4-a716-446655440000"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Payment confirmed — season ticket is now paid",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Season ticket payment confirmed."
+                                        },
+                                        "season_ticket_id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "example": "550e8400-e29b-41d4-a716-446655440000"
+                                        },
+                                        "status": {
+                                            "type": "string",
+                                            "example": "paid"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Season ticket not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Season ticket not found: xxx"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "409": {
+                        "description": "Season ticket is not in pending_payment status",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Cannot pay for a non-pending season ticket."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/season-tickets/purchase": {
+            "post": {
+                "tags": [
+                    "Season Tickets"
+                ],
+                "summary": "Reserve a season ticket",
+                "description": "Reserves a seat across all events in a season and applies the season discount. Returns a season ticket in `pending_payment` status. Idempotent via `idempotency_key`.",
+                "operationId": "aac9151d987cef56de336a88ac3b4221",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "season_id",
+                                    "row",
+                                    "number",
+                                    "idempotency_key"
+                                ],
+                                "properties": {
+                                    "season_id": {
+                                        "description": "ID of the season",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "row": {
+                                        "description": "Seat row identifier",
+                                        "type": "string",
+                                        "example": "A"
+                                    },
+                                    "number": {
+                                        "description": "Seat number within the row",
+                                        "type": "integer",
+                                        "example": 12
+                                    },
+                                    "idempotency_key": {
+                                        "description": "Unique key to prevent duplicate reservations (UUID recommended)",
+                                        "type": "string",
+                                        "example": "uuid-12345"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Season ticket reserved — awaiting payment",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "string",
+                                            "example": "550e8400-e29b-41d4-a716-446655440000"
+                                        },
+                                        "status": {
+                                            "type": "string",
+                                            "example": "pending_payment"
+                                        },
+                                        "price": {
+                                            "properties": {
+                                                "amount": {
+                                                    "type": "integer",
+                                                    "example": 8800
+                                                },
+                                                "currency": {
+                                                    "type": "string",
+                                                    "example": "EUR"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "expires_at": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2026-01-01T12:15:00+00:00"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Season ticket reserved successfully. Please proceed to payment."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters including currency mismatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "409": {
+                        "description": "Seat already sold, renewal window violation, or duplicate request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Seat A-1 is already sold for event 3."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/tickets/purchase": {
+            "post": {
+                "tags": [
+                    "Tickets"
+                ],
+                "summary": "Purchase a ticket for a single event",
+                "description": "Reserves a seat and queues an async payment job. Idempotent: repeated calls with the same Idempotency-Key return the original reservation.",
+                "operationId": "5963b3d6d50b1235e9f381b04c0c7d98",
+                "parameters": [
+                    {
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "description": "Unique client-generated key to prevent duplicate purchases (UUID recommended).",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "550e8400-e29b-41d4-a716-446655440000"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "event_id",
+                                    "seat_id"
+                                ],
+                                "properties": {
+                                    "event_id": {
+                                        "description": "ID of the event",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "seat_id": {
+                                        "description": "ID of the seat to purchase",
+                                        "type": "integer",
+                                        "example": 42
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "Purchase accepted — payment processing queued",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Purchase processing started. You will receive a confirmation shortly."
+                                        },
+                                        "reservation_id": {
+                                            "type": "string",
+                                            "example": "550e8400-e29b-41d4-a716-446655440000"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing or invalid parameters",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "409": {
+                        "description": "Seat already sold or duplicate request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Seat already sold."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "sanctum": {
+                "type": "apiKey",
+                "description": "Enter token in format (Bearer <token>)",
+                "name": "Authorization",
+                "in": "header"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Tickets",
+            "description": "Single-event ticket purchase flow"
+        },
+        {
+            "name": "Season Tickets",
+            "description": "Season ticket reservation and payment"
+        },
+        {
+            "name": "Events",
+            "description": "Seat availability and admin statistics"
+        }
+    ],
+    "security": [
+        {
+            "sanctum": []
+        }
+    ]
+}

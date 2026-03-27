@@ -38,11 +38,19 @@ class RedisStockManager implements StockManager
                     Redis::del($lockKey);
                 }
             } else {
-                // Single short pause — just enough for a likely concurrent rehydration round-trip.
-                // Avoids blocking the PHP-FPM worker for up to 3 seconds under load.
-                usleep(50_000); // 50ms
+                // Retry up to 3 times waiting for the lock-holder to finish writing.
+                // If the key is still absent after all retries, forcefully rehydrate
+                // (the prior lock-holder likely died before writing).
+                $maxRetries = 3;
+                for ($attempt = 0; $attempt < $maxRetries; $attempt++) {
+                    usleep(50_000); // 50ms
+                    if (Redis::get($key) !== null) {
+                        break; // Key was written by the lock-holder — we're done
+                    }
+                }
+
                 if (Redis::get($key) === null) {
-                    // The other worker may have died; try to acquire the lock before rehydrating.
+                    // Lock-holder died; acquire lock ourselves and rehydrate
                     if (Redis::set($lockKey, '1', ['nx', 'ex' => 5])) {
                         try {
                             $this->rehydrateStockFromDatabase($eventId, $key);
@@ -50,7 +58,8 @@ class RedisStockManager implements StockManager
                             Redis::del($lockKey);
                         }
                     }
-                    // If we cannot get the lock another worker is rehydrating; trust it will complete.
+                    // If another concurrent worker got the lock, it will rehydrate;
+                    // the Lua script will simply see 0 stock (correct if event is sold out).
                 }
             }
         }

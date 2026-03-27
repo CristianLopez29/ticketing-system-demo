@@ -9,9 +9,22 @@ use Src\Ticketing\Domain\ValueObjects\Money;
 
 class FakePaymentGateway implements PaymentGateway
 {
-    private bool $shouldFail = false;
-    private bool $shouldFailRefund = false;
+    private bool $shouldFail;
+    private bool $shouldFailRefund;
 
+    /**
+     * @param bool $shouldFail        Force the next charge() to fail (preferred for test setup via constructor)
+     * @param bool $shouldFailRefund  Force the next refund() to fail
+     */
+    public function __construct(
+        bool $shouldFail = false,
+        bool $shouldFailRefund = false,
+    ) {
+        $this->shouldFail       = $shouldFail;
+        $this->shouldFailRefund = $shouldFailRefund;
+    }
+
+    /** @deprecated Prefer injecting failure state via constructor — use new static(shouldFail: true) */
     public function forceFailNextCharge(): self
     {
         $this->shouldFail = true;
@@ -19,6 +32,7 @@ class FakePaymentGateway implements PaymentGateway
         return $this;
     }
 
+    /** @deprecated Prefer injecting failure state via constructor — use new static(shouldFailRefund: true) */
     public function forceFailNextRefund(): self
     {
         $this->shouldFailRefund = true;
