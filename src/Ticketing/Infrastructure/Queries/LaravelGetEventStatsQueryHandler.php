@@ -40,7 +40,7 @@ class LaravelGetEventStatsQueryHandler implements GetEventStatsQueryHandler
             'available_stock_redis' => $redisStock,
             'tickets_issued' => $ticketsIssued,
             'reservations_pending' => $reservationsPending,
-            'integrity_check' => ($dbSold + $redisStock) === $totalSeats ? 'OK' : 'MISMATCH',
+            'integrity_check' => ($dbSold + $redisStock) === $totalSeats ? 'OK' : 'DRIFT',
         ];
     }
 }

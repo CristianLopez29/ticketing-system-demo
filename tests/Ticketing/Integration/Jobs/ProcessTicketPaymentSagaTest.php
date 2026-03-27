@@ -76,7 +76,7 @@ class ProcessTicketPaymentSagaTest extends TestCase
         // Let's use a mock for PaymentGateway to delete the reservation during the charge method
         // But wait, charge is called, then DB transaction. We can just delete the reservation manually by mocking PaymentGateway's charge to call parent::charge and also delete reservation.
 
-        $gateway = new class extends FakePaymentGateway {
+        $gateway = new class(shouldFailRefund: true) extends FakePaymentGateway {
             public string $resId = '';
             public function charge(int $userId, \Src\Ticketing\Domain\ValueObjects\Money $amount): string
             {
@@ -87,8 +87,6 @@ class ProcessTicketPaymentSagaTest extends TestCase
             }
         };
         $gateway->resId = $reservationId;
-        // Force refund to fail so the pending_refund record is written
-        $gateway->forceFailNextRefund();
         $this->app->instance(\Src\Ticketing\Domain\Ports\PaymentGateway::class, $gateway);
 
         $job = new ProcessTicketPayment($reservationId);

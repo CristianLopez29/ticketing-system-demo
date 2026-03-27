@@ -12,12 +12,15 @@ class StressTestSeeder extends Seeder
     public function run(): void
     {
         // 1. Clean up database tables
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        DB::table('seats')->truncate();
-        DB::table('events')->truncate();
-        DB::table('reservations')->truncate();
-        DB::table('tickets')->truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        try {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            DB::table('seats')->truncate();
+            DB::table('events')->truncate();
+            DB::table('reservations')->truncate();
+            DB::table('tickets')->truncate();
+        } finally {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        }
 
         // Clear only ticketing-related Redis keys (preserve sessions, cache, queues)
         $keys = Redis::keys('event:*:stock');
