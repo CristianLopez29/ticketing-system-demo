@@ -10,6 +10,7 @@ use Src\Shared\Infrastructure\Middleware\CorrelationId;
 use Src\Shared\Infrastructure\Middleware\SecurityHeaders;
 use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -49,5 +50,17 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+        });
+
+        $exceptions->render(function (\RuntimeException $e, Request $request) {
+            if (! $request->expectsJson()) {
+                return null;
+            }
+
+            if ($e instanceof HttpExceptionInterface) {
+                return null;
+            }
+
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         });
     })->create();
