@@ -16,12 +16,20 @@ interface ReservationRepository
     public function findAndLock(string $id): ?Reservation;
 
     /**
+     * Cursor-based pagination over expired reservations.
+     *
+     * Returns at most $limit reservations with status PENDING_PAYMENT
+     * whose expires_at is at or before $now, ordered by (created_at ASC, id ASC).
+     *
+     * Pass the $afterCreatedAt and $afterId from the last record of the previous
+     * batch to fetch the next page. Pass null for both on the first call.
+     *
      * @return Reservation[]
      */
-    public function findExpired(DateTimeImmutable $now): array;
-
-    /**
-     * @return Reservation[]
-     */
-    public function findExpiredChunked(DateTimeImmutable $now, int $limit, int $offset): array;
+    public function findExpiredChunked(
+        DateTimeImmutable $now,
+        int $limit,
+        ?string $afterCreatedAt = null,
+        ?string $afterId = null,
+    ): array;
 }
