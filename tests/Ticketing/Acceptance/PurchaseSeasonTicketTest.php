@@ -437,7 +437,7 @@ class PurchaseSeasonTicketTest extends TestCase
             'idempotency_key' => 'uuid-currency-fail',
         ]);
 
-        $response->assertStatus(422); // Validation error handled as 422 Unprocessable Entity for RuntimeException
+        $response->assertStatus(400); // InvalidArgumentException → 400 BAD_REQUEST
         $response->assertJsonFragment(['error' => 'Currency mismatch across events in season.']);
 
         // Stock reverted

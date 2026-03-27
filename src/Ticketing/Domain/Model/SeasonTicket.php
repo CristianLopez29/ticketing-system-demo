@@ -7,6 +7,7 @@ namespace Src\Ticketing\Domain\Model;
 use DateTimeImmutable;
 use Src\Shared\Domain\AggregateRoot;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
+use Src\Ticketing\Domain\Events\SeasonTicketPaid;
 use Src\Ticketing\Domain\Exceptions\InvalidStateException;
 use Src\Ticketing\Domain\ValueObjects\Money;
 
@@ -80,6 +81,7 @@ class SeasonTicket extends AggregateRoot
             throw new InvalidStateException('Cannot pay for a non-pending season ticket.');
         }
         $this->status = ReservationStatus::PAID;
+        $this->record(new SeasonTicketPaid($this->id, $this->seasonId, $this->userId));
     }
 
     public function cancel(): void

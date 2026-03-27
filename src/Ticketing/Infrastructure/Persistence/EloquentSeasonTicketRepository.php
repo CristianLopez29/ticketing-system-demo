@@ -25,8 +25,8 @@ class EloquentSeasonTicketRepository implements SeasonTicketRepository
                 'price_amount' => $seasonTicket->price()->amount(),
                 'price_currency' => $seasonTicket->price()->currency(),
                 'status' => $seasonTicket->status()->value,
-                'expires_at' => $seasonTicket->expiresAt(),
-                'created_at' => $seasonTicket->createdAt(),
+                'expires_at' => $seasonTicket->expiresAt()?->format('Y-m-d H:i:s'),
+                'created_at' => $seasonTicket->createdAt()->format('Y-m-d H:i:s'),
                 'updated_at' => now(),
             ]
         );
