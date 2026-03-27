@@ -15,8 +15,10 @@ use Src\Ticketing\Application\Ports\IdempotencyStore;
 use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Application\Ports\TransactionManager;
 use Src\Ticketing\Application\Ports\UserNotifier;
+use Src\Ticketing\Application\Ports\ReadModelCache;
 use Src\Ticketing\Application\Queries\GetEventSeatsQueryHandler;
 use Src\Ticketing\Application\Queries\GetEventStatsQueryHandler;
+use Src\Ticketing\Infrastructure\Cache\LaravelReadModelCache;
 use Src\Ticketing\Application\UseCases\ProcessTicketPaymentUseCase;
 use Src\Ticketing\Application\UseCases\PurchaseSeasonTicketUseCase;
 use Src\Ticketing\Domain\Events\TicketSold;
@@ -65,6 +67,7 @@ class Bindings extends ServiceProvider
         $this->app->bind(UserNotifier::class, LogUserNotifier::class);
         $this->app->bind(GetEventSeatsQueryHandler::class, LaravelGetEventSeatsQueryHandler::class);
         $this->app->bind(GetEventStatsQueryHandler::class, LaravelGetEventStatsQueryHandler::class);
+        $this->app->bind(ReadModelCache::class, LaravelReadModelCache::class);
         $this->app->bind(PendingRefundRepository::class, EloquentPendingRefundRepository::class);
         $this->app->singleton(ClockInterface::class, Clock::class);
 

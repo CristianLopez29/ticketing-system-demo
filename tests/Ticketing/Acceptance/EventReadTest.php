@@ -57,15 +57,19 @@ class EventReadTest extends TestCase
         // 2. Act
         $response = $this->getJson("/api/events/{$event->id}/seats");
 
-        // 3. Assert
-        $response->assertStatus(200)
-            ->assertJsonCount(2);
+        // 3. Assert — response is now paginated: {data: [...], next_cursor: ...}
+        $response->assertStatus(200);
 
-        $data = $response->json();
-        $this->assertIsArray($data);
+        $json = $response->json();
+        $this->assertIsArray($json);
+        $this->assertArrayHasKey('data', $json);
+        $this->assertArrayHasKey('next_cursor', $json);
 
-        $first = $data[0] ?? null;
-        $second = $data[1] ?? null;
+        $seats = $json['data'];
+        $this->assertCount(2, $seats);
+
+        $first  = $seats[0] ?? null;
+        $second = $seats[1] ?? null;
 
         $this->assertIsArray($first);
         $this->assertIsArray($second);
@@ -75,6 +79,9 @@ class EventReadTest extends TestCase
 
         $this->assertEquals('available', $second['status'] ?? null);
         $this->assertEquals(2, $second['number'] ?? null);
+
+        // When all records fit in one page, next_cursor should be null
+        $this->assertNull($json['next_cursor']);
     }
 
     public function test_can_fetch_event_stats(): void
