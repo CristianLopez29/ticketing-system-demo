@@ -4,35 +4,50 @@ declare(strict_types=1);
 
 namespace Src\Ticketing\Infrastructure\Queries;
 
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Src\Ticketing\Application\Ports\ReadModelCache;
 use Src\Ticketing\Application\Queries\GetEventSeatsQuery;
 use Src\Ticketing\Application\Queries\GetEventSeatsQueryHandler;
 
 class LaravelGetEventSeatsQueryHandler implements GetEventSeatsQueryHandler
 {
+    public function __construct(
+        private readonly ReadModelCache $cache
+    ) {}
+
     public function handle(GetEventSeatsQuery $query): mixed
     {
-        $cacheKey = "event:{$query->eventId}:seats_read_model";
+        $cacheKey = "event:{$query->eventId}:seats_read_model:after:{$query->afterSeatId}:per:{$query->perPage}";
 
-        return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($query) {
-            return DB::table('seats')
+        return $this->cache->remember($cacheKey, 300, function () use ($query) {
+            $seats = DB::table('seats')
                 ->where('event_id', $query->eventId)
+                ->when($query->afterSeatId > 0, fn ($q) => $q->where('id', '>', $query->afterSeatId))
                 ->select(['id', 'row', 'number', 'price_amount', 'price_currency', 'reserved_by_user_id'])
                 ->orderBy('row')
                 ->orderBy('number')
+                ->limit($query->perPage)
                 ->get()
                 ->map(fn ($seat) => [
-                    'id' => $seat->id,
-                    'row' => $seat->row,
+                    'id'     => $seat->id,
+                    'row'    => $seat->row,
                     'number' => $seat->number,
-                    'price' => [
-                        'amount' => $seat->price_amount,
+                    'price'  => [
+                        'amount'   => $seat->price_amount,
                         'currency' => $seat->price_currency,
                     ],
                     'status' => $seat->reserved_by_user_id ? 'sold' : 'available',
                 ])
                 ->all();
+
+            $nextCursor = count($seats) === $query->perPage
+                ? end($seats)['id'] ?? null
+                : null;
+
+            return [
+                'data'        => $seats,
+                'next_cursor' => $nextCursor,
+            ];
         });
     }
 }
