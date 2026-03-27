@@ -22,5 +22,8 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 .env
-AGENTS.md
 .trae/
+.claude_tasks/
+ARCHITECTURE.md
+context.md
+Agents.md
