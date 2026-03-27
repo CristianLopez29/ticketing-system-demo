@@ -15,25 +15,28 @@ class ProcessTicketPayment implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 5;
+    /** @var int Reduced to 3 — fits within the 5-minute reservation TTL (10s+20s+40s = 70s) */
+    public int $tries = 3;
 
     public int $timeout = 30;
 
     /**
      * Calculate the number of seconds to wait before retrying the job.
-     * Exponential backoff: 10s, 20s, 40s, 80s...
+     * Exponential backoff: 10s, 20s, 40s
      */
     public function backoff(): array
     {
-        return [10, 20, 40, 80];
+        return [10, 20, 40];
     }
 
     /**
      * Determine the time at which the job should timeout.
+     * Aligned with the reservation TTL (5 minutes) — retries past that point
+     * will always fail with "Reservation expired or cancelled".
      */
     public function retryUntil(): \DateTime
     {
-        return now()->addMinutes(10);
+        return now()->addMinutes(5);
     }
 
     public function __construct(

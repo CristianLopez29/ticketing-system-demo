@@ -21,7 +21,9 @@ interface ReservationRepository
     public function findExpired(DateTimeImmutable $now): array;
 
     /**
+     * Cursor-based pagination — immune to row shifts caused by status updates during iteration.
+     *
      * @return Reservation[]
      */
-    public function findExpiredChunked(DateTimeImmutable $now, int $limit, int $offset): array;
+    public function findExpiredChunked(DateTimeImmutable $now, int $limit, string $afterId = ''): array;
 }

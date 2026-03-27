@@ -26,13 +26,13 @@ class CleanupExpiredReservations extends Command
         StockManager $stockManager,
         TransactionManager $transactionManager
     ): int {
-        $now    = new DateTimeImmutable();
-        $limit  = 100;
-        $offset = 0;
-        $total  = 0;
+        $now             = new DateTimeImmutable();
+        $limit           = 100;
+        $lastProcessedId = '';
+        $total           = 0;
 
         while (true) {
-            $batch = $reservationRepository->findExpiredChunked($now, $limit, $offset);
+            $batch = $reservationRepository->findExpiredChunked($now, $limit, $lastProcessedId);
 
             if (empty($batch)) {
                 break;
@@ -77,9 +77,10 @@ class CleanupExpiredReservations extends Command
                     $this->error("Failed to cleanup reservation {$reservation->id()}: {$e->getMessage()}");
                     Log::error("Cleanup failed for reservation {$reservation->id()}", ['exception' => $e]);
                 }
-            }
 
-            $offset += $limit;
+                // Advance cursor — even if the reservation failed, move past it to avoid infinite loops
+                $lastProcessedId = $reservation->id();
+            }
         }
 
         if ($total === 0) {

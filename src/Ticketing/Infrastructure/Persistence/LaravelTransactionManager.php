@@ -11,17 +11,6 @@ class LaravelTransactionManager implements TransactionManager
 {
     public function run(\Closure $callback): mixed
     {
-        DB::beginTransaction();
-
-        try {
-            $result = $callback();
-            DB::commit();
-
-            return $result;
-        } catch (\Throwable $e) {
-            DB::rollBack();
-
-            throw $e;
-        }
+        return DB::transaction($callback);
     }
 }
