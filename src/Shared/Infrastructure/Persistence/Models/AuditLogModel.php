@@ -12,6 +12,7 @@ class AuditLogModel extends Model
         'action',
         'entity_type',
         'entity_id',
+        'actor_id',
         'payload',
     ];
 
