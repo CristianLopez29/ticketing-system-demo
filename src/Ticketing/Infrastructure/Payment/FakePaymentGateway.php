@@ -20,7 +20,7 @@ class FakePaymentGateway implements PaymentGateway
         bool $shouldFail = false,
         bool $shouldFailRefund = false,
     ) {
-        $this->shouldFail       = $shouldFail;
+        $this->shouldFail = $shouldFail;
         $this->shouldFailRefund = $shouldFailRefund;
     }
 
@@ -53,7 +53,6 @@ class FakePaymentGateway implements PaymentGateway
     public function refund(string $transactionId): void
     {
         if ($this->shouldFailRefund) {
-            $this->shouldFailRefund = false;
             throw new \RuntimeException('Refund declined by the bank.');
         }
         // Simulate a refund

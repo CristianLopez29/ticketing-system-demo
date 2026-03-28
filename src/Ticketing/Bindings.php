@@ -47,7 +47,6 @@ use Src\Ticketing\Infrastructure\Persistence\RedisIdempotencyStore;
 use Src\Ticketing\Infrastructure\Persistence\RedisStockManager;
 use Src\Ticketing\Infrastructure\Queries\LaravelGetEventSeatsQueryHandler;
 use Src\Ticketing\Infrastructure\Queries\LaravelGetEventStatsQueryHandler;
-use Symfony\Component\Clock\Clock;
 
 class Bindings extends ServiceProvider
 {
@@ -69,7 +68,6 @@ class Bindings extends ServiceProvider
         $this->app->bind(GetEventStatsQueryHandler::class, LaravelGetEventStatsQueryHandler::class);
         $this->app->bind(ReadModelCache::class, LaravelReadModelCache::class);
         $this->app->bind(PendingRefundRepository::class, EloquentPendingRefundRepository::class);
-        $this->app->singleton(ClockInterface::class, Clock::class);
 
         $this->app->bind(\Psr\Clock\ClockInterface::class, function () {
             return new class implements \Psr\Clock\ClockInterface {
