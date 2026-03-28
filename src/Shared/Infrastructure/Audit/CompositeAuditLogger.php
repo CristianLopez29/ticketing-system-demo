@@ -17,10 +17,14 @@ class CompositeAuditLogger implements AuditLogger
     }
 
     /** @param array<string, mixed> $payload */
-    public function log(string $action, string $entityType, string $entityId, array $payload = []): void
+    public function log(string $action, string $entityType, string $entityId, ?string $actorId = null, array $payload = []): void
     {
         foreach ($this->loggers as $logger) {
-            $logger->log($action, $entityType, $entityId, $payload);
+            try {
+                $logger->log($action, $entityType, $entityId, $actorId, $payload);
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
     }
 }

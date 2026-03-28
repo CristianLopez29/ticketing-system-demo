@@ -10,11 +10,12 @@ use Src\Shared\Domain\Audit\AuditLogger;
 class FileAuditLogger implements AuditLogger
 {
     /** @param array<string, mixed> $payload */
-    public function log(string $action, string $entityType, string $entityId, array $payload = []): void
+    public function log(string $action, string $entityType, string $entityId, ?string $actorId = null, array $payload = []): void
     {
         Log::info($action, [
             'entity_type' => $entityType,
             'entity_id' => $entityId,
+            'actor_id' => $actorId,
             'payload' => $payload,
         ]);
     }
