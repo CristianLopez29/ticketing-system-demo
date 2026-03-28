@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Src\Ticketing\Infrastructure\Persistence;
 
 use Illuminate\Support\Facades\Redis;
+use Src\Ticketing\Application\Ports\SeatReadModel;
 use Src\Ticketing\Application\Ports\StockManager;
-use Src\Ticketing\Domain\Repositories\SeatRepository;
 
 class RedisStockManager implements StockManager
 {
@@ -20,7 +20,7 @@ class RedisStockManager implements StockManager
     LUA;
 
     public function __construct(
-        private readonly SeatRepository $seatRepository
+        private readonly SeatReadModel $seatReadModel
     ) {}
 
     public function attemptToReserve(int $eventId): bool
@@ -81,7 +81,7 @@ class RedisStockManager implements StockManager
     }
 
     private function rehydrateStockFromDatabase(int $eventId, string $key): void    {
-        $availableSeats = $this->seatRepository->countAvailableForEvent($eventId);
+        $availableSeats = $this->seatReadModel->countAvailableForEvent($eventId);
 
         // SET NX (only set if not exists) to avoid overwriting a concurrent re-hydration
         Redis::setnx($key, $availableSeats);

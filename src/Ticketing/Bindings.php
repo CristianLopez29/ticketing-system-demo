@@ -16,6 +16,7 @@ use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Application\Ports\TransactionManager;
 use Src\Ticketing\Application\Ports\UserNotifier;
 use Src\Ticketing\Application\Ports\ReadModelCache;
+use Src\Ticketing\Application\Ports\SeatReadModel;
 use Src\Ticketing\Application\Queries\GetEventSeatsQueryHandler;
 use Src\Ticketing\Application\Queries\GetEventStatsQueryHandler;
 use Src\Ticketing\Infrastructure\Cache\LaravelReadModelCache;
@@ -58,6 +59,7 @@ class Bindings extends ServiceProvider
         $this->app->bind(EventRepository::class, EloquentEventRepository::class);
         $this->app->bind(ReservationRepository::class, EloquentReservationRepository::class);
         $this->app->bind(SeatRepository::class, EloquentSeatRepository::class);
+        $this->app->bind(SeatReadModel::class, EloquentSeatRepository::class);
         $this->app->bind(StockManager::class, RedisStockManager::class);
         $this->app->bind(IdempotencyStore::class, RedisIdempotencyStore::class);
         $this->app->bind(UuidGenerator::class, PhpUuidGenerator::class);

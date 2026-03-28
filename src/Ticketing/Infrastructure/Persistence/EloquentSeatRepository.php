@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Src\Ticketing\Infrastructure\Persistence;
 
 use Illuminate\Support\Facades\DB;
+use Src\Ticketing\Application\Ports\SeatReadModel;
 use Src\Ticketing\Domain\Model\Seat;
 use Src\Ticketing\Domain\Repositories\SeatRepository;
 use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Domain\ValueObjects\SeatId;
 
-class EloquentSeatRepository implements SeatRepository
+class EloquentSeatRepository implements SeatRepository, SeatReadModel
 {
     public function findAndLock(SeatId $id): ?Seat
     {
@@ -45,6 +46,11 @@ class EloquentSeatRepository implements SeatRepository
         DB::table('seats')
             ->where('id', $seat->id()->value())
             ->update([
+                'event_id'            => $seat->eventId(),
+                'row'                 => $seat->row(),
+                'number'              => $seat->number(),
+                'price_amount'        => $seat->price()->amount(),
+                'price_currency'      => $seat->price()->currency(),
                 'reserved_by_user_id' => $seat->reservedByUserId(),
                 'updated_at'          => now(),
             ]);
