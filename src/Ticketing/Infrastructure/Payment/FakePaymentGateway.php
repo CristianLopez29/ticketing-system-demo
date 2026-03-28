@@ -42,7 +42,8 @@ class FakePaymentGateway implements PaymentGateway
 
     public function charge(int $userId, Money $amount): string
     {
-        if ($this->shouldFailCharge) {
+        if ($this->shouldFail) {
+            $this->shouldFail = false; // reset for next call
             throw new \RuntimeException('Payment declined by the bank.');
         }
 

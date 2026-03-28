@@ -6,6 +6,7 @@ namespace Src\Ticketing;
 
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Src\Shared\Domain\Services\UuidGenerator;
 use Src\Shared\Infrastructure\Services\PhpUuidGenerator;
