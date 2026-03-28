@@ -62,24 +62,8 @@ class PurchaseSeasonTicketUseCase
             }
 
             $now = $this->clock->now();
-            if ($season->isRenewalWindow($now)) {
-                $previousSeasonId = $season->previousSeasonId();
-                if ($previousSeasonId) {
-                    $previousTicket = $this->seasonTicketRepository->findOneBySeasonAndSeat(
-                        $previousSeasonId,
-                        $request->row,
-                        $request->number
-                    );
-
-                    if (! $previousTicket) {
-                        throw new SeatAlreadySoldException('Renewal Period: This seat was not reserved in the previous season, so it cannot be renewed. Wait for general sale.');
-                    }
-
-                    if ($previousTicket->userId() !== $request->userId) {
-                        throw new SeatAlreadySoldException('Renewal Period: This seat is reserved for the previous owner.');
-                    }
-                }
-            }
+            $isRenewalWindow = $season->isRenewalWindow($now);
+            $previousSeasonId = $isRenewalWindow ? $season->previousSeasonId() : null;
 
             $events = $this->eventRepository->findBySeasonId($season->id());
             if (empty($events)) {
@@ -95,7 +79,25 @@ class PurchaseSeasonTicketUseCase
                 }
             }
 
-            $result = $this->transactionManager->run(function () use ($request, $season, $events) {
+            $result = $this->transactionManager->run(function () use ($request, $season, $events, $isRenewalWindow, $previousSeasonId) {
+                // Renewal ownership check INSIDE the transaction with a pessimistic lock.
+                // This eliminates the TOCTOU race condition during the renewal window.
+                if ($isRenewalWindow && $previousSeasonId !== null) {
+                    $previousTicket = $this->seasonTicketRepository->findAndLockBySeasonAndSeat(
+                        $previousSeasonId,
+                        $request->row,
+                        $request->number
+                    );
+
+                    if (! $previousTicket) {
+                        throw new SeatAlreadySoldException('Renewal Period: This seat was not reserved in the previous season, so it cannot be renewed. Wait for general sale.');
+                    }
+
+                    if ($previousTicket->userId() !== $request->userId) {
+                        throw new SeatAlreadySoldException('Renewal Period: This seat is reserved for the previous owner.');
+                    }
+                }
+
                 $totalPrice = null;
                 $seatsToReserve = [];
 

@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -8,6 +9,7 @@ use Illuminate\Http\Request;
 use Src\Security\Infrastructure\Middleware\EnsureRole;
 use Src\Shared\Infrastructure\Middleware\CorrelationId;
 use Src\Shared\Infrastructure\Middleware\SecurityHeaders;
+use Src\Ticketing\Domain\Exceptions\InvalidStateException;
 use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -36,12 +38,28 @@ return Application::configure(basePath: dirname(__DIR__))
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_CONFLICT);
         });
 
+        $exceptions->render(function (InvalidStateException $e, Request $request) {
+            if (! $request->expectsJson()) {
+                return null;
+            }
+
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_CONFLICT);
+        });
+
         $exceptions->render(function (\Src\Ticketing\Domain\Exceptions\DuplicateRequestException $e, Request $request) {
             if (! $request->expectsJson()) {
                 return null;
             }
 
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_CONFLICT);
+        });
+
+        $exceptions->render(function (AuthorizationException $e, Request $request) {
+            if (! $request->expectsJson()) {
+                return null;
+            }
+
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_FORBIDDEN);
         });
 
         $exceptions->render(function (\InvalidArgumentException $e, Request $request) {
