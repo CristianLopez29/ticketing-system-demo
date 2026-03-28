@@ -73,6 +73,23 @@ class EloquentSeasonTicketRepository implements SeasonTicketRepository
         return $this->mapToEntity($record);
     }
 
+    public function findAndLockBySeasonAndSeat(int $seasonId, string $row, int $number): ?SeasonTicket
+    {
+        $record = DB::table('season_tickets')
+            ->where('season_id', $seasonId)
+            ->where('row', $row)
+            ->where('number', $number)
+            ->where('status', '!=', ReservationStatus::CANCELLED->value)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $record) {
+            return null;
+        }
+
+        return $this->mapToEntity($record);
+    }
+
     private function mapToEntity(mixed $record): SeasonTicket
     {
         $record = (array) $record;

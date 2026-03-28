@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Src\Ticketing\Infrastructure\Controllers;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Src\Ticketing\Application\UseCases\PaySeasonTicketUseCase;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -41,14 +42,20 @@ class PaySeasonTicketController
      *         @OA\JsonContent(@OA\Property(property="error", type="string", example="Season ticket not found: xxx"))
      *     ),
      *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden — the ticket belongs to another user",
+     *         @OA\JsonContent(@OA\Property(property="error", type="string", example="You are not authorized to pay for this season ticket."))
+     *     ),
      *     @OA\Response(response=409, description="Season ticket is not in pending_payment status",
      *         @OA\JsonContent(@OA\Property(property="error", type="string", example="Cannot pay for a non-pending season ticket."))
      *     )
      * )
      */
-    public function __invoke(string $id): JsonResponse
+    public function __invoke(Request $request, string $id): JsonResponse
     {
-        $seasonTicket = $this->useCase->execute($id);
+        /** @var int $userId */
+        $userId = $request->user()->id;
+
+        $seasonTicket = $this->useCase->execute($id, $userId);
 
         return new JsonResponse([
             'message'          => 'Season ticket payment confirmed.',
