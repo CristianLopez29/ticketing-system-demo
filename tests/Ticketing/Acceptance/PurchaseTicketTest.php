@@ -57,7 +57,7 @@ class PurchaseTicketTest extends TestCase
             'event_id' => $event->id,
             'seat_id' => $seat->id,
         ], [
-            'Idempotency-Key' => 'unique-req-123',
+            'Idempotency-Key' => 'a1b2c3d4-e5f6-4789-89ab-cdef01234567',
         ]);
 
         $response->assertStatus(202)
@@ -120,7 +120,7 @@ class PurchaseTicketTest extends TestCase
             'event_id' => $event->id,
             'seat_id' => $seat->id,
         ], [
-            'Idempotency-Key' => 'unique-req-123',
+            'Idempotency-Key' => 'a1b2c3d4-e5f6-4789-89ab-cdef01234567',
         ]);
 
         $response->assertStatus(409)
@@ -153,7 +153,7 @@ class PurchaseTicketTest extends TestCase
         $first = $this->postJson('/api/tickets/purchase', [
             'event_id' => $event->id,
             'seat_id' => $seat->id,
-        ], ['Idempotency-Key' => 'unique-req-123'])->assertStatus(202);
+        ], ['Idempotency-Key' => 'a1b2c3d4-e5f6-4789-89ab-cdef01234567'])->assertStatus(202);
 
         $firstReservationId = $first->json('reservation_id');
 
@@ -162,7 +162,62 @@ class PurchaseTicketTest extends TestCase
         $response = $this->postJson('/api/tickets/purchase', [
             'event_id' => $event->id,
             'seat_id' => $seat->id,
-        ], ['Idempotency-Key' => 'unique-req-123']);
+        ], ['Idempotency-Key' => 'a1b2c3d4-e5f6-4789-89ab-cdef01234567']);
+
+        $response->assertStatus(202);
+    }
+
+    public function test_rejects_invalid_idempotency_key_format(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
+        $seat  = SeatModel::create([
+            'event_id'           => $event->id,
+            'row'                => 'A',
+            'number'             => 1,
+            'price_amount'       => 5000,
+            'price_currency'     => 'USD',
+            'reserved_by_user_id' => null,
+        ]);
+
+        $response = $this->postJson('/api/tickets/purchase', [
+            'event_id' => $event->id,
+            'seat_id'  => $seat->id,
+        ], [
+            'Idempotency-Key' => 'not-a-valid-uuid',
+        ]);
+
+        $response->assertStatus(400)
+            ->assertJsonFragment(['error' => 'Idempotency-Key must be a valid UUID v4.']);
+    }
+
+    public function test_accepts_valid_uuid_v4_idempotency_key(): void
+    {
+        Bus::fake();
+
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
+        $seat  = SeatModel::create([
+            'event_id'           => $event->id,
+            'row'                => 'A',
+            'number'             => 2,
+            'price_amount'       => 5000,
+            'price_currency'     => 'USD',
+            'reserved_by_user_id' => null,
+        ]);
+
+        Redis::set("event:{$event->id}:stock", 100);
+
+        $response = $this->postJson('/api/tickets/purchase', [
+            'event_id' => $event->id,
+            'seat_id'  => $seat->id,
+        ], [
+            'Idempotency-Key' => '550e8400-e29b-41d4-a716-446655440000',
+        ]);
 
         $response->assertStatus(202);
     }

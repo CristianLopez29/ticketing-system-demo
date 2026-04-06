@@ -66,6 +66,12 @@ class PurchaseTicketController
             ], Response::HTTP_BAD_REQUEST);
         }
 
+        if (! preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $idempotencyKey)) {
+            return new JsonResponse([
+                'error' => 'Idempotency-Key must be a valid UUID v4.',
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
         $validated = $request->validate([
             'event_id' => 'required|integer',
             'seat_id' => 'required|integer',
