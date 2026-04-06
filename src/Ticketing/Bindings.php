@@ -36,6 +36,8 @@ use Src\Ticketing\Infrastructure\Jobs\LaravelAsyncDispatcher;
 use Src\Ticketing\Infrastructure\Listeners\InvalidateSeatsCacheOnTicketSold;
 use Src\Ticketing\Infrastructure\Notifications\LogUserNotifier;
 use Src\Ticketing\Infrastructure\Payment\FakePaymentGateway;
+use Src\Ticketing\Infrastructure\Payment\RedisCircuitBreaker;
+use Src\Ticketing\Infrastructure\Payment\StripePaymentGateway;
 use Src\Ticketing\Infrastructure\Persistence\EloquentEventRepository;
 use Src\Ticketing\Infrastructure\Persistence\EloquentPendingRefundRepository;
 use Src\Ticketing\Infrastructure\Persistence\EloquentReservationRepository;
@@ -113,9 +115,13 @@ class Bindings extends ServiceProvider
             );
         });
 
+        $this->app->singleton(RedisCircuitBreaker::class);
+
         $gatewayDriver = config('ticketing.payment_gateway', 'fake');
         if ($gatewayDriver === 'stripe') {
-            $this->app->bind(PaymentGateway::class, \Src\Ticketing\Infrastructure\Payment\StripePaymentGateway::class);
+            $this->app->bind(PaymentGateway::class, function ($app) {
+                return new StripePaymentGateway($app->make(RedisCircuitBreaker::class));
+            });
         } else {
             $this->app->bind(PaymentGateway::class, FakePaymentGateway::class);
         }
