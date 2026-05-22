@@ -94,13 +94,14 @@ class ProcessTicketPaymentSagaTest extends TestCase
             app()->call([$job, 'handle']);
             $this->fail('Expected an exception to be thrown, but none was.');
         }
-        catch (\Exception $e) {
-        // Exception is expected — continue to assertions below
+        catch (\Exception) {
+            // Exception is expected — continue to assertions below
         }
 
         // Assert pending refund was created
         $this->assertDatabaseCount('pending_refunds', 1);
         $pendingRefund = DB::table('pending_refunds')->first();
+        $this->assertNotNull($pendingRefund);
         $this->assertEquals($reservationId, $pendingRefund->reservation_id);
         $this->assertStringContainsString('Refund declined by the bank.', $pendingRefund->reason);
     }

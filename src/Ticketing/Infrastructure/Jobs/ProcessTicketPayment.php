@@ -23,6 +23,8 @@ class ProcessTicketPayment implements ShouldQueue
     /**
      * Calculate the number of seconds to wait before retrying the job.
      * Exponential backoff: 10s, 20s, 40s
+     *
+     * @return int[]
      */
     public function backoff(): array
     {
@@ -34,7 +36,7 @@ class ProcessTicketPayment implements ShouldQueue
      * Aligned with the reservation TTL (5 minutes) — retries past that point
      * will always fail with "Reservation expired or cancelled".
      */
-    public function retryUntil(): \DateTime
+    public function retryUntil(): \DateTimeInterface
     {
         return now()->addMinutes(5);
     }

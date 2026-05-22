@@ -36,8 +36,6 @@ class LaravelGetEventSeatsQueryHandlerTest extends TestCase
     {
         $query = new GetEventSeatsQuery(eventId: 10, afterSeatId: 0, perPage: 50);
 
-        $expectedResult = ['data' => [], 'next_cursor' => null];
-
         // DB::table(...) chain mock
         $this->mockDbTableForEventSeats(10, 0, 50, []);
 
@@ -45,10 +43,10 @@ class LaravelGetEventSeatsQueryHandlerTest extends TestCase
         $taggedCache = Mockery::mock(TaggedCache::class);
         $taggedCache->shouldReceive('remember')
             ->once()
-            ->withArgs(function (string $key, int $ttl, Closure $cb) {
+            ->withArgs(function (string $key, int $ttl, Closure $_cb) {
                 return str_contains($key, 'after:0:per:50') && $ttl === 300;
             })
-            ->andReturnUsing(fn ($key, $ttl, Closure $cb) => $cb());
+            ->andReturnUsing(fn (string $_key, int $_ttl, Closure $cb) => $cb());
 
         Cache::shouldReceive('tags')
             ->once()
@@ -117,7 +115,8 @@ class LaravelGetEventSeatsQueryHandlerTest extends TestCase
      * Mock DB::table('seats')->...->get() to return an empty collection.
      * Only needed when the cache closure actually executes.
      */
-    private function mockDbTableForEventSeats(int $eventId, int $afterSeatId, int $perPage, array $rows): void
+    /** @param array<int, array<string, mixed>> $rows */
+    private function mockDbTableForEventSeats(int $_eventId, int $_afterSeatId, int $_perPage, array $rows): void
     {
         $collection = new Collection(array_map(fn ($r) => (object) $r, $rows));
 

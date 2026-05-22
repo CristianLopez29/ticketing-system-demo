@@ -43,7 +43,6 @@ class ProcessTicketPaymentUseCase
             return;
         }
 
-        // Ensure job idempotency
         if ($reservation->status() !== ReservationStatus::PENDING_PAYMENT) {
             return;
         }
@@ -87,14 +86,14 @@ class ProcessTicketPaymentUseCase
                 'error'          => $e->getMessage(),
             ]);
 
-            $this->compensate($reservationId, $transactionId ?? null, $e, $reservation);
+            $this->compensate($reservationId, $transactionId, $e, $reservation);
 
             throw $e;
         }
     }
 
     /**
-     * Saga compensation: revertes all side-effects when DB commit fails after a successful charge.
+     * Saga compensation: reverts all side-effects when DB commit fails after a successful charge.
      */
     private function compensate(
         string $reservationId,

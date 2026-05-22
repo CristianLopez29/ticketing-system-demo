@@ -11,6 +11,7 @@ class LaravelTransactionManager implements TransactionManager
 {
     public function run(\Closure $callback): mixed
     {
+        // @phpstan-ignore-next-line (Larastan cannot resolve generic TCallbackReturnType from untyped Closure)
         return DB::transaction($callback);
     }
 }

@@ -127,7 +127,8 @@ class EloquentReservationRepositoryTest extends TestCase
         $page1 = $this->repository->findExpiredChunked($now, 2);
         $this->assertCount(2, $page1);
 
-        $last           = end($page1);
+        $last = end($page1);
+        assert($last instanceof \Src\Ticketing\Domain\Model\Reservation);
         $afterCreatedAt = $last->createdAt()->format(DateTimeImmutable::ATOM);
         $afterId        = $last->id();
 
@@ -155,6 +156,7 @@ class EloquentReservationRepositoryTest extends TestCase
 
         $page1 = $this->repository->findExpiredChunked($now, 2);
         $last1 = end($page1);
+        assert($last1 instanceof \Src\Ticketing\Domain\Model\Reservation);
 
         $page2 = $this->repository->findExpiredChunked(
             $now, 2,
@@ -162,6 +164,7 @@ class EloquentReservationRepositoryTest extends TestCase
             $last1->id()
         );
         $last2 = end($page2);
+        assert($last2 instanceof \Src\Ticketing\Domain\Model\Reservation);
 
         // Third call: no more records
         $page3 = $this->repository->findExpiredChunked(

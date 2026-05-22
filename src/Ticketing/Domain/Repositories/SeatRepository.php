@@ -13,4 +13,7 @@ interface SeatRepository
 
     public function findAndLockByLocation(int $eventId, string $row, int $number): ?Seat;
 
+    public function save(Seat $seat): void;
+
+    public function countAvailableForEvent(int $eventId): int;
 }

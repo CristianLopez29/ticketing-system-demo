@@ -73,6 +73,7 @@ class RealQueueWorkerTest extends TestCase
         ProcessTicketPayment::dispatch($reservationId);
 
         // Run the worker for one job
+        // @phpstan-ignore-next-line (artisan() returns PendingCommand|int; int case cannot happen when assertions are chained)
         $this->artisan('queue:work', ['--once' => true])->assertSuccessful();
 
         $this->assertDatabaseCount('jobs', 0);

@@ -69,7 +69,7 @@ class RedisCircuitBreakerTest extends TestCase
 
         $this->circuitBreaker->guardOrFail(); // Should not throw
 
-        $this->assertTrue(true); // Reached here — good
+        $this->addToAssertionCount(1); // Reached here without exception — good
     }
 
     public function test_success_resets_failure_counter(): void

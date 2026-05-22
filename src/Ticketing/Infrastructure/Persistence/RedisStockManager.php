@@ -51,6 +51,7 @@ class RedisStockManager implements StockManager
 
                 if (Redis::get($key) === null) {
                     // Lock-holder died; acquire lock ourselves and rehydrate
+                    // @phpstan-ignore-next-line (PHPStan cannot model Redis state changes between calls)
                     if (Redis::set($lockKey, '1', ['nx', 'ex' => 5])) {
                         try {
                             $this->rehydrateStockFromDatabase($eventId, $key);
@@ -64,7 +65,7 @@ class RedisStockManager implements StockManager
             }
         }
 
-        // Atomic Lua execution
+        // @phpstan-ignore-next-line (Laravel facade signature differs from raw phpredis stubs)
         $result = Redis::eval(self::SCRIPT, 1, $key);
 
         return (bool) $result;

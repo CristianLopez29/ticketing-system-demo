@@ -1,173 +1,271 @@
-# Ticketing System (High Concurrency & Stress Testing)
+# Ticketing System — High-Concurrency Ticket Reservation
 
-## 🎯 Project Goal
-This project is a high-concurrency ticketing system designed to handle massive traffic spikes (e.g., "Sold Out" scenarios).
-The main goal is to ensure **Data Consistency** and **Integrity** under extreme load (1,000 concurrent users).
+A ticket reservation and purchasing system built to demonstrate **Hexagonal Architecture**, **Domain-Driven Design**, and **high-concurrency data integrity** under extreme load.
 
-## 🛠 Tech Stack
-- **Language:** PHP 8.4 (Strict Types, Readonly classes, Enums).
-- **Framework:** Laravel 12 (Used as 'glue code' and delivery mechanism only).
-- **Documentation:** L5-Swagger / OpenAPI.
-- **Monitoring:** Sentry (Error Tracking).
-- **Database:** MySQL 8.0 (InnoDB, READ COMMITTED).
-- **Cache/Locking:** Redis (Atomic operations, Lua scripts, Distributed Locks).
-- **Testing:**
-    - **Unit/Feature:** PHPUnit (Strict TDD).
-    - **Load/Stress:** k6 (JavaScript).
+> **Portfolio Focus:** This project showcases how to prevent race conditions when 1,000 users simultaneously compete for 100 tickets.
 
-## 🏗 Architecture (Hexagonal + DDD)
-The project follows strict Hexagonal Architecture principles (Ports & Adapters).
+---
 
-### Directory Structure
-```text
-src/
-├── Shared/                  # Shared Kernel (Audit, Base Classes)
-│   ├── Domain/
-│   └── Infrastructure/
-│
-└── Ticketing/               # Ticketing Bounded Context
-    ├── Domain/              # Pure business logic (Inner Hexagon)
-    │   ├── Model/           # Entities (Reservation, Season, Ticket)
-    │   ├── ValueObjects/    # Value Objects (Money, SeatId)
-    │   ├── Ports/           # Interfaces (PaymentGateway)
-    │   ├── Repositories/    # Repository Interfaces
-    │   ├── Events/          # Domain Events (TicketSold)
-    │   ├── Exceptions/      # Domain Exceptions
-    │
-    ├── Application/         # Application Logic (Coordinating Hexagon)
-    │   ├── UseCases/        # Command Handlers (PurchaseTicket, PurchaseSeasonTicket)
-    │   └── DTOs/            # Data Transfer Objects
-    │
-    └── Infrastructure/      # Framework & I/O (Adapters)
-        ├── Controllers/     # HTTP Controllers
-        ├── Console/         # Artisan commands
-        ├── Jobs/            # Async Jobs (ProcessTicketPayment)
-        ├── Payment/         # Payment adapters (Stripe, Fake)
-        └── Persistence/     # Eloquent & Redis Implementations
-```
+## Table of Contents
 
-### Dependency Rules
-1. **Domain** depends on NOTHING.
-2. **Application** depends ONLY on Domain.
-3. **Infrastructure** depends on Application and Domain.
+1. [Quick Start](#quick-start)
+2. [Architecture Overview](#architecture-overview)
+3. [Core Flow: Purchasing a Ticket](#core-flow-purchasing-a-ticket)
+4. [Tech Stack](#tech-stack)
+5. [API Endpoints](#api-endpoints)
+6. [Testing](#testing)
+7. [Project Structure](#project-structure)
+8. [Contribution Workflow](#contribution-workflow)
 
-## ⚡ Key Features & Implementation Details
+---
 
-### 1. High Concurrency Purchase (Single Ticket)
-- **Redis Atomic Locks:** First line of defense. Checks and decrements stock atomically using Lua scripts (`RedisStockManager`).
-- **DB Transaction & Pessimistic Locking:** `SELECT ... FOR UPDATE` ensures row-level locking in MySQL.
-- **Idempotency:** `Idempotency-Key` header support to prevent double charges.
-- **Flow:**
-    1. **Request:** `POST /api/tickets/purchase`
-    2. **Redis Check:** Fail fast if sold out.
-    3. **DB Lock:** Lock seat row.
-    4. **Domain Guard:** `$seat->reserve($user)`.
-    5. **Commit:** Save and dispatch event.
-
-### 2. Season Tickets (Complex Logic)
-- **Renewal Logic:** Supports priority windows where previous season owners have exclusive rights to their seats.
-- **Atomic Batch Reservation:** Reserves the same seat across ALL events in a season within a single database transaction.
-- **Consistency:** If one event's seat is unavailable, the entire season ticket purchase fails.
-
-### 3. Reservations & Expiration
-- **Two-Step Process:** Reserve -> Pay.
-- **Status:** `PENDING_PAYMENT` -> `PAID`.
-- **Expiration:** Reservations have a TTL (default 5 mins).
-- **Cleanup:** `CleanupExpiredReservations` command releases expired seats.
-
-### 4. Audit Logging
-- **Shared Kernel:** Centralized `AuditLogger` in `src/Shared` tracks critical actions across the system.
-
-## 🧪 Testing Strategy
-
-### 1. Unit & Feature Tests
-We achieve high coverage in the Domain layer and test the full purchase flow via Feature tests.
-
-**Run Tests:**
-```bash
-# Run all tests
-./vendor/bin/sail test
-
-# Run only Ticketing tests
-./vendor/bin/sail artisan test tests/Ticketing
-```
-
-## 🔀 Contribution Workflow (Branches + PRs + Conventional Commits)
-- All changes MUST be implemented via feature branches and merged through Pull Requests (PRs). Direct pushes to `main` are forbidden.
-- Split work into independent functional blocks. Each block MUST have its own branch and its own PR, and MUST be reviewable, testable, and mergeable in isolation.
-- All commit messages MUST follow Conventional Commits in English using the format: `type(scope): short description`.
-- Allowed `type` values: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`.
-- PR titles MUST also follow Conventional Commits in English (same format as commits).
-- CI MUST run tests inside Docker (using `compose.yaml` / Laravel Sail).
-- This practice MUST be verified (automatically and/or manually) during code review before approving any merge.
-
-### 2. Stress Testing (k6)
-We verify system resilience with **k6**. The scenario simulates 1,000 concurrent users fighting for 100 tickets.
-
-**Scenario:**
-- **Availability:** 100 tickets.
-- **Concurrent Users:** 1,000.
-- **Duration:** 30 seconds.
-
-**Success Criteria:**
-- exactly 100 sales recorded in DB.
-- Stock in Redis is 0.
-- Remaining requests fail with `409 Conflict` or `422 Unprocessable Entity` (Expected).
-- **ZERO** `500 Internal Server Error`.
-
-**Prepare Data:**
-```bash
-./vendor/bin/sail artisan db:seed --class=StressTestSeeder
-```
-
-**Run Stress Test:**
-
-If you have k6 installed locally:
-```bash
-BASE_URL=http://localhost k6 run tests/Load/k6/purchase_stress_test.js
-```
-
-If you want to run k6 via Docker (recommended):
-```bash
-# Linux / Mac / Git Bash (accessing host via host.docker.internal)
-docker run --rm -i -e BASE_URL=http://host.docker.internal grafana/k6 run - < tests/Load/k6/purchase_stress_test.js
-
-# Windows PowerShell
-Get-Content tests/Load/k6/purchase_stress_test.js | docker run --rm -i -e BASE_URL=http://host.docker.internal grafana/k6 run -
-```
-
-## 🚀 Getting Started
+## Quick Start
 
 ### Prerequisites
 - Docker & Docker Compose
 
 ### Installation
-1. Start the containers:
-   ```bash
-   ./vendor/bin/sail up -d
-   ```
-   Or directly with Docker Compose:
-   ```bash
-   docker compose up -d
-   ```
 
-2. Generate app key (first run only):
-   ```bash
-   ./vendor/bin/sail artisan key:generate
-   ```
+```bash
+# 1. Start containers
+docker compose up -d
 
-3. Run migrations:
-   ```bash
-   ./vendor/bin/sail artisan migrate
-   ```
+# 2. Install dependencies & generate key
+docker compose exec laravel composer install
+docker compose exec laravel php artisan key:generate
 
-4. (Optional) Access the shell:
-   ```bash
-   ./vendor/bin/sail shell
-   ```
+# 3. Run migrations
+docker compose exec laravel php artisan migrate
 
-5. View API Documentation:
-   Visit `/api/documentation` (requires L5-Swagger generation if not already generated).
-   ```bash
-   ./vendor/bin/sail artisan l5-swagger:generate
-   ```
+# 4. (Optional) Seed stress-test data
+docker compose exec laravel php artisan db:seed --class=StressTestSeeder
+
+# 5. Generate API docs
+docker compose exec laravel php artisan l5-swagger:generate
+```
+
+The API will be available at `http://localhost` and Swagger docs at `http://localhost/api/documentation`.
+
+---
+
+## Architecture Overview
+
+This project follows **Hexagonal Architecture (Ports & Adapters)** with strict dependency rules:
+
+```
+┌─────────────────────────────────────────┐
+│           Infrastructure                │  ← Laravel, Redis, MySQL
+│  (Controllers, Repositories, Jobs)      │
+├─────────────────────────────────────────┤
+│           Application                   │  ← Use Cases, DTOs, Ports
+│  (PurchaseTicketUseCase, Queries)       │
+├─────────────────────────────────────────┤
+│           Domain                        │  ← Pure business logic
+│  (Ticket, Seat, Reservation, Events)    │
+└─────────────────────────────────────────┘
+```
+
+**Dependency Rule:** Domain knows nothing about frameworks. Infrastructure depends on Application and Domain.
+
+### Bounded Contexts
+
+| Context | Responsibility |
+|---------|---------------|
+| `Ticketing` | Events, seats, reservations, tickets, season tickets |
+| `Security` | Authentication via Sanctum, rate limiting |
+| `Reports` | Admin report downloads |
+| `Shared` | Audit logging, health checks, base classes |
+
+---
+
+## Core Flow: Purchasing a Ticket
+
+The [`PurchaseTicketUseCase`](src/Ticketing/Application/UseCases/PurchaseTicketUseCase.php) is the star of the system. It guarantees that **exactly one user gets each seat** even under extreme concurrency.
+
+```
+POST /api/tickets/purchase
+Header: Idempotency-Key: <uuid-v4>
+Body:   { "event_id": 1, "seat_id": 42 }
+```
+
+### Step-by-Step
+
+| Step | Layer | What Happens |
+|------|-------|-------------|
+| 1 | Controller | Validates `Idempotency-Key` (UUID v4) and input |
+| 2 | Application | Checks idempotency store (Redis) — duplicate? Return previous result |
+| 3 | Application | Atomically decrements stock in Redis (fast fail if sold out) |
+| 4 | Application | Starts DB transaction + `SELECT ... FOR UPDATE` on seat row |
+| 5 | Domain | `$seat->reserve($userId)` — state change + validation |
+| 6 | Domain | `Reservation::create(...)` — new aggregate |
+| 7 | Application | Commits transaction, releases DB lock |
+| 8 | Application | Dispatches async payment job (Saga pattern) |
+| 9 | Application | Stores result in idempotency store |
+| 10 | Domain | `TicketSold` domain event recorded for listeners |
+
+### Concurrency Safeguards
+
+- **Redis Atomic Lock** — First barrier; prevents unnecessary DB load
+- **Pessimistic DB Locking** — `lockForUpdate()` guarantees row-level isolation
+- **Idempotency** — Same `Idempotency-Key` always returns the same result, never double-charges
+- **Circuit Breaker** — [`RedisCircuitBreaker`](src/Ticketing/Infrastructure/Payment/RedisCircuitBreaker.php) prevents cascading payment failures
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Language | PHP 8.4 (strict types, readonly classes, enums) |
+| Framework | Laravel 12 (delivery mechanism only) |
+| Database | MySQL 8.0 (InnoDB, READ COMMITTED) |
+| Cache/Locking | Redis (atomic Lua scripts, distributed locks) |
+| Auth | Laravel Sanctum |
+| API Docs | L5-Swagger / OpenAPI 3 |
+| Testing | PHPUnit + k6 (load/stress) |
+| CI | GitHub Actions + Docker |
+
+---
+
+## API Endpoints
+
+### Public
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/login` | Authenticate (rate-limited) |
+| GET | `/api/health` | Health probe |
+| GET | `/api/readiness` | Readiness probe (DB + cache) |
+
+### Authenticated
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/events/{id}/seats` | List available seats (cursor pagination) |
+| POST | `/api/tickets/purchase` | Purchase single ticket |
+| POST | `/api/season-tickets/purchase` | Purchase season ticket |
+| POST | `/api/season-tickets/{id}/pay` | Pay pending season ticket |
+| POST | `/api/logout` | Revoke current token |
+| POST | `/api/refresh-token` | Rotate token |
+
+### Admin Only
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/events/{id}/stats` | Event sales statistics |
+| GET | `/api/reports/download` | Download report file |
+| POST | `/api/users/{id}/tokens/revoke-all` | Revoke all user tokens |
+
+---
+
+## Testing
+
+### Test Pyramid
+
+```
+      /
+     /  \     Acceptance (HTTP end-to-end)
+    /____\
+   /      \   Integration (DB, Redis, Jobs)
+  /________\
+ /          \ Unit (Domain logic, no framework)
+/____________\
+```
+
+### Running Tests
+
+```bash
+# All tests
+docker compose exec laravel php artisan test
+
+# By suite
+docker compose exec laravel php artisan test tests/Ticketing/Unit
+docker compose exec laravel php artisan test tests/Ticketing/Integration
+docker compose exec laravel php artisan test tests/Ticketing/Acceptance
+```
+
+### Load Testing with k6
+
+Simulate 1,000 concurrent users competing for 100 tickets:
+
+```bash
+# Seed stress data first
+docker compose exec laravel php artisan db:seed --class=StressTestSeeder
+
+# Run k6 (via Docker)
+docker run --rm -i -e BASE_URL=http://host.docker.internal grafana/k6 run - < tests/Load/k6/purchase_stress_test.js
+```
+
+**Success Criteria:**
+- Exactly 100 sales in database
+- 900 requests fail with `409 Conflict` or `422` (expected)
+- Zero `500 Internal Server Error`
+
+---
+
+## Project Structure
+
+```
+src/
+├── Shared/                          # Shared Kernel
+│   ├── Domain/Audit/AuditLogger.php
+│   └── Infrastructure/
+│       ├── Audit/                   # Composite + Eloquent + File loggers
+│       ├── Middleware/              # CorrelationId, SecurityHeaders
+│       └── Persistence/Models/      # AuditLogModel
+│
+├── Security/                        # Authentication context
+│   ├── Application/UseCases/LoginUseCase.php
+│   ├── Domain/Ports/Authenticator.php
+│   └── Infrastructure/
+│       ├── Auth/SanctumAuthenticator.php
+│       ├── Controllers/AuthController.php
+│       └── Middleware/EnsureRole.php
+│
+├── Ticketing/                       # Core domain context
+│   ├── Domain/
+│   │   ├── Model/                   # Ticket, Seat, Reservation, Event, Season
+│   │   ├── ValueObjects/            # Money, SeatId
+│   │   ├── Events/                  # TicketSold, ReservationPaid
+│   │   ├── Exceptions/              # SeatAlreadySoldException, etc.
+│   │   ├── Repositories/            # Repository interfaces
+│   │   └── Ports/PaymentGateway.php
+│   │
+│   ├── Application/
+│   │   ├── UseCases/                # PurchaseTicketUseCase, ProcessTicketPaymentUseCase
+│   │   ├── Queries/                 # GetEventSeatsQuery, GetEventStatsQuery
+│   │   ├── DTOs/                    # PurchaseTicketRequestDTO
+│   │   └── Ports/                   # StockManager, IdempotencyStore, AsyncDispatcher
+│   │
+│   └── Infrastructure/
+│       ├── Controllers/             # HTTP entry points
+│       ├── Persistence/             # Eloquent + Redis implementations
+│       ├── Payment/                 # StripeGateway, FakeGateway, CircuitBreaker
+│       ├── Jobs/                    # ProcessTicketPayment
+│       ├── Listeners/               # InvalidateSeatsCacheOnTicketSold
+│       └── Console/                 # CleanupExpiredReservations
+│
+└── Reports/                         # Admin report downloads
+    ├── Application/DownloadReportUseCase.php
+    └── Infrastructure/Storage/LaravelReportStorage.php
+
+tests/
+├── Ticketing/
+│   ├── Unit/Domain/                 # Entity & Value Object tests
+│   ├── Integration/                 # Repository & Job tests
+│   └── Acceptance/                  # HTTP flow tests
+├── Security/Acceptance/             # Auth tests
+└── Load/k6/                         # Stress tests
+```
+
+---
+
+## Contribution Workflow
+
+- All changes via feature branches + Pull Requests. No direct pushes to `main`.
+- Conventional Commits: `type(scope): description`
+- Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+- CI runs lint, static analysis, and full test suite in Docker
+
+---
+
+## License
+
+MIT

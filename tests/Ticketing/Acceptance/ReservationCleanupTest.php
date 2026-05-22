@@ -132,7 +132,9 @@ class ReservationCleanupTest extends TestCase
             ]);
         }
 
-        $this->artisan('ticketing:cleanup-expired-reservations')->assertExitCode(0)->run();
+        /** @var \Illuminate\Testing\PendingCommand $command */
+        $command = $this->artisan('ticketing:cleanup-expired-reservations');
+        $command->assertExitCode(0)->run();
 
         $this->assertDatabaseHas('reservations', ['id' => $resId1, 'status' => ReservationStatus::CANCELLED->value]);
         $this->assertDatabaseHas('reservations', ['id' => $resId2, 'status' => ReservationStatus::CANCELLED->value]);
@@ -170,8 +172,9 @@ class ReservationCleanupTest extends TestCase
             'updated_at'     => now()->subMinutes(30),
         ]);
 
-        $this->artisan('ticketing:cleanup-expired-reservations')
-            ->expectsOutput('No expired reservations found.')
+        /** @var \Illuminate\Testing\PendingCommand $commandIgnored */
+        $commandIgnored = $this->artisan('ticketing:cleanup-expired-reservations');
+        $commandIgnored->expectsOutput('No expired reservations found.')
             ->assertExitCode(0)
             ->run();
 
