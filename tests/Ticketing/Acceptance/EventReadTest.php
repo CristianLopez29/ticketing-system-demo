@@ -65,7 +65,7 @@ class EventReadTest extends TestCase
         $this->assertArrayHasKey('data', $json);
         $this->assertArrayHasKey('next_cursor', $json);
 
-        $seats = $json['data'];
+        $seats = (array) ($json['data'] ?? []);
         $this->assertCount(2, $seats);
 
         $first  = $seats[0] ?? null;

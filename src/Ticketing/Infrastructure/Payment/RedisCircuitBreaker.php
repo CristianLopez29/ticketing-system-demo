@@ -34,9 +34,7 @@ final class RedisCircuitBreaker
      */
     public function guardOrFail(): void
     {
-        $openUntil = (int) Redis::get(self::KEY_OPEN_UNTIL);
-
-        if ($openUntil > time()) {
+        if ($this->isOpen()) {
             throw new CircuitBreakerOpenException();
         }
     }
@@ -66,12 +64,10 @@ final class RedisCircuitBreaker
         }
     }
 
-    /**
-     * Returns true when the circuit is currently open (gateway considered unavailable).
-     */
     public function isOpen(): bool
     {
-        $openUntil = (int) Redis::get(self::KEY_OPEN_UNTIL);
+        $raw = Redis::get(self::KEY_OPEN_UNTIL);
+        $openUntil = is_numeric($raw) ? (int) $raw : 0;
 
         return $openUntil > time();
     }
@@ -81,7 +77,8 @@ final class RedisCircuitBreaker
      */
     public function failureCount(): int
     {
-        return (int) Redis::get(self::KEY_FAILURES);
+        $raw = Redis::get(self::KEY_FAILURES);
+        return is_numeric($raw) ? (int) $raw : 0;
     }
 
     /**

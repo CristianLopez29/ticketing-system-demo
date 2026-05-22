@@ -52,8 +52,9 @@ class PaySeasonTicketController
      */
     public function __invoke(Request $request, string $id): JsonResponse
     {
-        /** @var int $userId */
-        $userId = $request->user()->id;
+        /** @var \App\Models\User $authUser */
+        $authUser = $request->user();
+        $userId = (int) $authUser->id;
 
         $seasonTicket = $this->useCase->execute($id, $userId);
 

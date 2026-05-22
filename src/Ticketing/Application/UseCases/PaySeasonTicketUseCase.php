@@ -23,6 +23,7 @@ class PaySeasonTicketUseCase
      */
     public function execute(string $seasonTicketId, int $userId): SeasonTicket
     {
+        /** @var SeasonTicket */
         return $this->transactionManager->run(function () use ($seasonTicketId, $userId): SeasonTicket {
             $seasonTicket = $this->seasonTicketRepository->find($seasonTicketId);
 

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Src\Ticketing\Application\UseCases;
 
-use DateTimeImmutable;
 use InvalidArgumentException;
 use Psr\Clock\ClockInterface;
 use RuntimeException;
@@ -20,14 +19,13 @@ use Src\Ticketing\Domain\Repositories\EventRepository;
 use Src\Ticketing\Domain\Repositories\SeasonRepository;
 use Src\Ticketing\Domain\Repositories\SeasonTicketRepository;
 use Src\Ticketing\Domain\Repositories\SeatRepository;
-use Src\Ticketing\Domain\ValueObjects\Money;
 
 class PurchaseSeasonTicketUseCase
 {
     public function __construct(
         private readonly SeasonRepository $seasonRepository,
         private readonly EventRepository $eventRepository,
-        private readonly SeatRepository $ticketRepository,
+        private readonly SeatRepository $seatRepository,
         private readonly SeasonTicketRepository $seasonTicketRepository,
         private readonly StockManager $stockManager,
         private readonly TransactionManager $transactionManager,
@@ -40,10 +38,8 @@ class PurchaseSeasonTicketUseCase
     public function execute(PurchaseSeasonTicketRequestDTO $request): SeasonTicket
     {
         if (! $this->idempotencyStore->markAsProcessed($request->idempotencyKey)) {
-            // If completed before, the caller is just retrying — return the stored result
             $previousId = $this->idempotencyStore->getResult($request->idempotencyKey);
             if ($previousId !== null) {
-                // Re-fetch and return the existing season ticket object
                 $existing = $this->seasonTicketRepository->find($previousId);
                 if ($existing) {
                     return $existing;
@@ -54,7 +50,6 @@ class PurchaseSeasonTicketUseCase
 
         $reservedStockEventIds = [];
 
-        // Validate season existence
         try {
             $season = $this->seasonRepository->find($request->seasonId);
             if (! $season) {
@@ -70,7 +65,6 @@ class PurchaseSeasonTicketUseCase
                 throw new RuntimeException("No events found for season: {$season->id()}");
             }
 
-            // Phase 1: Distributed stock check (Redis) before opening DB transaction
             foreach ($events as $event) {
                 if ($this->stockManager->attemptToReserve($event->id())) {
                     $reservedStockEventIds[] = $event->id();
@@ -79,7 +73,8 @@ class PurchaseSeasonTicketUseCase
                 }
             }
 
-            $result = $this->transactionManager->run(function () use ($request, $season, $events, $isRenewalWindow, $previousSeasonId) {
+            /** @var SeasonTicket $result */
+            $result = $this->transactionManager->run(function () use ($request, $events, $isRenewalWindow, $previousSeasonId): SeasonTicket {
                 // Renewal ownership check INSIDE the transaction with a pessimistic lock.
                 // This eliminates the TOCTOU race condition during the renewal window.
                 if ($isRenewalWindow && $previousSeasonId !== null) {
@@ -102,7 +97,7 @@ class PurchaseSeasonTicketUseCase
                 $seatsToReserve = [];
 
                 foreach ($events as $event) {
-                    $seat = $this->ticketRepository->findAndLockByLocation(
+                    $seat = $this->seatRepository->findAndLockByLocation(
                         $event->id(),
                         $request->row,
                         $request->number
@@ -129,7 +124,7 @@ class PurchaseSeasonTicketUseCase
                 }
 
                 $discountPercent = max(0, min(100, $this->seasonTicketDiscountPercent));
-                $discountedPrice = $totalPrice ? $totalPrice->applyDiscountPercent($discountPercent) : new Money(0, 'EUR');
+                $discountedPrice = $totalPrice->applyDiscountPercent($discountPercent);
 
                 $seasonTicket = new SeasonTicket(
                     $this->uuidGenerator->generate(),
@@ -147,17 +142,12 @@ class PurchaseSeasonTicketUseCase
 
                 foreach ($seatsToReserve as $seat) {
                     $seat->reserve($request->userId);
-                    $this->ticketRepository->save($seat);
+                    $this->seatRepository->save($seat);
                 }
 
                 return $seasonTicket;
             });
 
-            if (! $result instanceof SeasonTicket) {
-                throw new RuntimeException('Unexpected result while creating season ticket.');
-            }
-
-            // Store the result so retrying callers get the original outcome
             $this->idempotencyStore->markAsCompleted($request->idempotencyKey, $result->id());
 
             return $result;

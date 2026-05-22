@@ -11,6 +11,7 @@ class LaravelReadModelCache implements ReadModelCache
 {
     public function remember(string $key, int $ttlSeconds, \Closure $callback): mixed
     {
+        // @phpstan-ignore-next-line (Larastan cannot resolve generic TCacheValue from untyped Closure)
         return Cache::remember($key, $ttlSeconds, $callback);
     }
 }

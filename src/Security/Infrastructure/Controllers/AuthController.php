@@ -7,7 +7,6 @@ namespace Src\Security\Infrastructure\Controllers;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Src\Security\Application\UseCases\LoginUseCase;
 use Src\Security\Domain\Exceptions\AuthenticationFailedException;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,10 +25,14 @@ class AuthController
         ]);
 
         try {
-            $token = $this->loginUseCase->execute($request->input('email'), $request->input('password'));
+            /** @var string $email */
+            $email = $request->input('email');
+            /** @var string $password */
+            $password = $request->input('password');
+            $token = $this->loginUseCase->execute($email, $password);
 
             return response()->json(['access_token' => $token]);
-        } catch (AuthenticationFailedException $e) {
+        } catch (AuthenticationFailedException) {
             return response()->json(['message' => 'Invalid login details'], 401);
         }
     }

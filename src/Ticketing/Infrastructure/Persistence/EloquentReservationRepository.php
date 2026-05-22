@@ -106,21 +106,37 @@ class EloquentReservationRepository implements ReservationRepository
         return $reservations;
     }
 
-    // -------------------------------------------------------------------------
-    // Private helpers
-    // -------------------------------------------------------------------------
-
+    /** @param array<string, mixed> $data */
     private function hydrate(array $data): Reservation
     {
+        /** @var string $id */
+        $id = $data['id'] ?? '';
+        /** @var int $eventId */
+        $eventId = $data['event_id'] ?? 0;
+        /** @var int $seatId */
+        $seatId = $data['seat_id'] ?? 0;
+        /** @var int $userId */
+        $userId = $data['user_id'] ?? 0;
+        /** @var string $status */
+        $status = $data['status'] ?? ReservationStatus::PENDING_PAYMENT->value;
+        /** @var int $priceAmount */
+        $priceAmount = $data['price_amount'] ?? 0;
+        /** @var string $priceCurrency */
+        $priceCurrency = $data['price_currency'] ?? 'EUR';
+        /** @var string $expiresAt */
+        $expiresAt = $data['expires_at'] ?? 'now';
+        /** @var string $createdAt */
+        $createdAt = $data['created_at'] ?? 'now';
+
         return new Reservation(
-            (string) ($data['id'] ?? ''),
-            (int) ($data['event_id'] ?? 0),
-            new SeatId((int) ($data['seat_id'] ?? 0)),
-            (int) ($data['user_id'] ?? 0),
-            ReservationStatus::from((string) ($data['status'] ?? ReservationStatus::PENDING_PAYMENT->value)),
-            new Money((int) ($data['price_amount'] ?? 0), (string) ($data['price_currency'] ?? 'EUR')),
-            new DateTimeImmutable((string) ($data['expires_at'] ?? 'now')),
-            new DateTimeImmutable((string) ($data['created_at'] ?? 'now'))
+            $id,
+            $eventId,
+            new SeatId($seatId),
+            $userId,
+            ReservationStatus::from($status),
+            new Money($priceAmount, $priceCurrency),
+            new DateTimeImmutable($expiresAt),
+            new DateTimeImmutable($createdAt)
         );
     }
 }

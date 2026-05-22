@@ -66,9 +66,10 @@ class PurchaseTicketTest extends TestCase
         // reservation_id must be present and be a valid UUID v4
         $reservationId = $response->json('reservation_id');
         $this->assertNotNull($reservationId);
+        $this->assertIsString($reservationId);
         $this->assertMatchesRegularExpression(
             '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i',
-            (string) $reservationId,
+            $reservationId,
             'reservation_id should be a valid UUID v4'
         );
         $this->assertDatabaseHas('seats', [
