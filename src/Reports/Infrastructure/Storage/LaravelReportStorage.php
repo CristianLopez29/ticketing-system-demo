@@ -5,17 +5,18 @@ declare(strict_types=1);
 namespace Src\Reports\Infrastructure\Storage;
 
 use Illuminate\Support\Facades\Storage;
+use Src\Reports\Domain\Exceptions\ReportNotFoundException;
 use Src\Reports\Domain\Ports\ReportStorage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LaravelReportStorage implements ReportStorage
 {
-    public function exists(string $filename): bool
+    public function download(string $filename): StreamedResponse
     {
-        return Storage::disk('reports')->exists($filename);
-    }
+        if (! Storage::disk('reports')->exists($filename)) {
+            throw new ReportNotFoundException("Report not found: {$filename}");
+        }
 
-    public function download(string $filename): mixed
-    {
         return Storage::disk('reports')->download($filename);
     }
 }
