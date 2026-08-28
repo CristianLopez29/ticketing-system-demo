@@ -22,9 +22,7 @@ class ReservationCleanupTest extends TestCase
     {
         parent::setUp();
         // Only flush keys used by this test namespace to avoid destroying shared Redis data in CI
-        foreach (Redis::keys('event:*:stock') as $key) {
-            Redis::del($key);
-        }
+        $this->forgetRedisKeys('event:*:stock');
     }
 
     public function test_cleanup_command_releases_expired_reservations(): void

@@ -24,9 +24,7 @@ class RealQueueWorkerTest extends TestCase
     {
         parent::setUp();
         // Only flush keys used by this test namespace to avoid destroying shared Redis data in CI
-        foreach (Redis::keys('event:*:stock') as $key) {
-            Redis::del($key);
-        }
+        $this->forgetRedisKeys('event:*:stock');
         config(['queue.default' => 'database']);
     }
 

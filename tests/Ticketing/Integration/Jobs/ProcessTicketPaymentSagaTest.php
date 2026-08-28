@@ -25,12 +25,7 @@ class ProcessTicketPaymentSagaTest extends TestCase
     {
         parent::setUp();
         // Only flush keys used by this test namespace to avoid destroying shared Redis data in CI
-        foreach (Redis::keys('event:*:stock') as $key) {
-            Redis::del($key);
-        }
-        foreach (Redis::keys('purchase:idempotency:*') as $key) {
-            Redis::del($key);
-        }
+        $this->forgetRedisKeys('event:*:stock', 'purchase:idempotency:*');
     }
 
     public function test_it_compensates_and_records_pending_refund_if_refund_fails_after_db_error(): void
