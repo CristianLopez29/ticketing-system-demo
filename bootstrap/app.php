@@ -5,6 +5,8 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Src\Reports\Domain\Exceptions\ReportNotFoundException;
+use Src\Security\Domain\Exceptions\AuthenticationFailedException;
 use Src\Security\Infrastructure\Middleware\EnsureRole;
 use Src\Shared\Infrastructure\Middleware\CorrelationId;
 use Src\Shared\Infrastructure\Middleware\SecurityHeaders;
@@ -60,6 +62,22 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_FORBIDDEN);
+        });
+
+        $exceptions->render(function (AuthenticationFailedException $e, Request $request) {
+            if (! $request->expectsJson()) {
+                return null;
+            }
+
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_UNAUTHORIZED);
+        });
+
+        $exceptions->render(function (ReportNotFoundException $e, Request $request) {
+            if (! $request->expectsJson()) {
+                return null;
+            }
+
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
         });
 
         $exceptions->render(function (\InvalidArgumentException $e, Request $request) {

@@ -8,7 +8,6 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Src\Security\Application\UseCases\LoginUseCase;
-use Src\Security\Domain\Exceptions\AuthenticationFailedException;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthController
@@ -24,17 +23,14 @@ class AuthController
             'password' => 'required',
         ]);
 
-        try {
-            /** @var string $email */
-            $email = $request->input('email');
-            /** @var string $password */
-            $password = $request->input('password');
-            $token = $this->loginUseCase->execute($email, $password);
+        /** @var string $email */
+        $email = $request->input('email');
+        /** @var string $password */
+        $password = $request->input('password');
 
-            return response()->json(['access_token' => $token]);
-        } catch (AuthenticationFailedException) {
-            return response()->json(['message' => 'Invalid login details'], 401);
-        }
+        return response()->json([
+            'access_token' => $this->loginUseCase->execute($email, $password),
+        ]);
     }
 
     public function logout(Request $request): JsonResponse
