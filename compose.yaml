@@ -17,6 +17,9 @@ services:
             XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
             XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
             IGNITION_LOCAL_SITES_PATH: '${PWD}'
+            # 'artisan serve' runs PHP's built-in server, single-process by default:
+            # that ceiling, not the application, is what a load test would measure.
+            PHP_CLI_SERVER_WORKERS: '${PHP_CLI_SERVER_WORKERS:-10}'
         volumes:
             - '.:/var/www/html'
         networks:
