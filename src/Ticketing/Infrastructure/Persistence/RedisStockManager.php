@@ -19,6 +19,13 @@ class RedisStockManager implements StockManager
         return 1
     LUA;
 
+    /** Long enough to outlive a re-hydration query, short enough to free a dead holder's lock fast. */
+    private const REHYDRATE_LOCK_TTL_SECONDS = 5;
+
+    private const REHYDRATE_MAX_RETRIES = 3;
+
+    private const REHYDRATE_RETRY_DELAY_MICROSECONDS = 50_000;
+
     public function __construct(
         private readonly SeatRepository $seatRepository
     ) {}
@@ -29,41 +36,7 @@ class RedisStockManager implements StockManager
 
         // Re-hydrate from DB if key is absent (Redis restart / key eviction)
         if (Redis::get($key) === null) {
-            $lockKey = "lock:rehydrate:{$eventId}";
-            // Only one worker re-hydrates; others wait for the key to appear
-            // @phpstan-ignore-next-line (the facade takes EX/NX as separate arguments; the raw phpredis stubs do not declare them)
-            if (Redis::set($lockKey, '1', 'EX', 5, 'NX')) {
-                try {
-                    $this->rehydrateStockFromDatabase($eventId, $key);
-                } finally {
-                    Redis::del($lockKey);
-                }
-            } else {
-                // Retry up to 3 times waiting for the lock-holder to finish writing.
-                // If the key is still absent afterwards, try to take the lock over —
-                // it succeeds only once the holder's lock has expired, i.e. when the
-                // holder died before writing.
-                $maxRetries = 3;
-                for ($attempt = 0; $attempt < $maxRetries; $attempt++) {
-                    usleep(50_000); // 50ms
-                    if (Redis::get($key) !== null) {
-                        break; // Key was written by the lock-holder — we're done
-                    }
-                }
-
-                if (Redis::get($key) === null) {
-                    // @phpstan-ignore-next-line (same facade signature gap, plus PHPStan cannot model Redis state changing between calls)
-                    if (Redis::set($lockKey, '1', 'EX', 5, 'NX')) {
-                        try {
-                            $this->rehydrateStockFromDatabase($eventId, $key);
-                        } finally {
-                            Redis::del($lockKey);
-                        }
-                    }
-                    // If another concurrent worker got the lock, it will rehydrate;
-                    // the Lua script will simply see 0 stock (correct if event is sold out).
-                }
-            }
+            $this->ensureStockIsHydrated($eventId, $key);
         }
 
         // @phpstan-ignore-next-line (Laravel facade signature differs from raw phpredis stubs)
@@ -80,6 +53,61 @@ class RedisStockManager implements StockManager
     public function setStock(int $eventId, int $stock): void
     {
         Redis::set("event:{$eventId}:stock", $stock);
+    }
+
+    /**
+     * Only one worker re-hydrates the counter; the others wait for the key to appear.
+     */
+    private function ensureStockIsHydrated(int $eventId, string $key): void
+    {
+        $lockKey = "lock:rehydrate:{$eventId}";
+
+        if ($this->rehydrateUnderLock($eventId, $key, $lockKey)) {
+            return;
+        }
+
+        $this->awaitKey($key);
+
+        // Still absent after the retry window: try to take the lock over. That
+        // succeeds only once the holder's lock has expired, i.e. it died before
+        // writing. While a live holder keeps it, the Lua script simply sees no
+        // stock, which beats racing it with a second re-hydration.
+        if (Redis::get($key) === null) {
+            $this->rehydrateUnderLock($eventId, $key, $lockKey);
+        }
+    }
+
+    /**
+     * @return bool Whether this worker won the NX lock and re-hydrated the counter.
+     */
+    private function rehydrateUnderLock(int $eventId, string $key, string $lockKey): bool
+    {
+        // @phpstan-ignore-next-line (the facade takes EX/NX as separate arguments; the raw phpredis stubs do not declare them)
+        if (! Redis::set($lockKey, '1', 'EX', self::REHYDRATE_LOCK_TTL_SECONDS, 'NX')) {
+            return false;
+        }
+
+        try {
+            $this->rehydrateStockFromDatabase($eventId, $key);
+        } finally {
+            Redis::del($lockKey);
+        }
+
+        return true;
+    }
+
+    /**
+     * Give the lock-holder a bounded window to finish writing the key.
+     */
+    private function awaitKey(string $key): void
+    {
+        for ($attempt = 0; $attempt < self::REHYDRATE_MAX_RETRIES; $attempt++) {
+            usleep(self::REHYDRATE_RETRY_DELAY_MICROSECONDS);
+
+            if (Redis::get($key) !== null) {
+                return;
+            }
+        }
     }
 
     private function rehydrateStockFromDatabase(int $eventId, string $key): void
