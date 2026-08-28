@@ -15,7 +15,7 @@ class SeasonTicketPaid implements DomainEvent
         public readonly int $seasonId,
         public readonly int $userId
     ) {
-        $this->occurredOn = new \DateTimeImmutable();
+        $this->occurredOn = new \DateTimeImmutable;
     }
 
     public function occurredOn(): \DateTimeImmutable

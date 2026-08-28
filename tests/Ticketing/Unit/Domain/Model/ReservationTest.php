@@ -5,10 +5,10 @@ namespace Tests\Ticketing\Unit\Domain\Model;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
+use Src\Ticketing\Domain\Exceptions\InvalidStateException;
 use Src\Ticketing\Domain\Model\Reservation;
 use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Domain\ValueObjects\SeatId;
-use Src\Ticketing\Domain\Exceptions\InvalidStateException;
 
 class ReservationTest extends TestCase
 {

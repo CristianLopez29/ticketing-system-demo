@@ -6,6 +6,4 @@ namespace Src\Reports\Domain\Exceptions;
 
 use RuntimeException;
 
-class ReportNotFoundException extends RuntimeException
-{
-}
+class ReportNotFoundException extends RuntimeException {}

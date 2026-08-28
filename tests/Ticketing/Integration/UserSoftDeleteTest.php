@@ -33,98 +33,98 @@ class UserSoftDeleteTest extends TestCase
 
     public function test_force_deleting_a_user_nullifies_ticket_user_id(): void
     {
-        $user  = User::factory()->create();
+        $user = User::factory()->create();
         $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
-        $seat  = SeatModel::create([
-            'event_id'            => $event->id,
-            'row'                 => 'A',
-            'number'              => 1,
-            'price_amount'        => 5000,
-            'price_currency'      => 'USD',
+        $seat = SeatModel::create([
+            'event_id' => $event->id,
+            'row' => 'A',
+            'number' => 1,
+            'price_amount' => 5000,
+            'price_currency' => 'USD',
             'reserved_by_user_id' => null,
         ]);
 
         // Insert a ticket directly (bypass domain layer for integration brevity)
         \DB::table('tickets')->insert([
-            'id'                => 'ticket-uuid-001',
-            'event_id'          => $event->id,
-            'seat_id'           => $seat->id,
-            'user_id'           => $user->id,
-            'price_amount'      => 5000,
-            'price_currency'    => 'USD',
+            'id' => 'ticket-uuid-001',
+            'event_id' => $event->id,
+            'seat_id' => $seat->id,
+            'user_id' => $user->id,
+            'price_amount' => 5000,
+            'price_currency' => 'USD',
             'payment_reference' => 'txn_test_001',
-            'issued_at'         => now(),
-            'created_at'        => now(),
-            'updated_at'        => now(),
+            'issued_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         $user->forceDelete();
 
         $this->assertDatabaseMissing('users', ['id' => $user->id]);
         $this->assertDatabaseHas('tickets', [
-            'id'      => 'ticket-uuid-001',
+            'id' => 'ticket-uuid-001',
             'user_id' => null,
         ]);
     }
 
     public function test_force_deleting_a_user_nullifies_reservation_user_id(): void
     {
-        $user  = User::factory()->create();
+        $user = User::factory()->create();
         $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
-        $seat  = SeatModel::create([
-            'event_id'            => $event->id,
-            'row'                 => 'B',
-            'number'              => 2,
-            'price_amount'        => 5000,
-            'price_currency'      => 'USD',
+        $seat = SeatModel::create([
+            'event_id' => $event->id,
+            'row' => 'B',
+            'number' => 2,
+            'price_amount' => 5000,
+            'price_currency' => 'USD',
             'reserved_by_user_id' => null,
         ]);
 
         \DB::table('reservations')->insert([
-            'id'             => 'reservation-uuid-001',
-            'event_id'       => $event->id,
-            'seat_id'        => $seat->id,
-            'user_id'        => $user->id,
-            'status'         => 'pending_payment',
-            'price_amount'   => 5000,
+            'id' => 'reservation-uuid-001',
+            'event_id' => $event->id,
+            'seat_id' => $seat->id,
+            'user_id' => $user->id,
+            'status' => 'pending_payment',
+            'price_amount' => 5000,
             'price_currency' => 'USD',
-            'expires_at'     => now()->addMinutes(10),
-            'created_at'     => now(),
-            'updated_at'     => now(),
+            'expires_at' => now()->addMinutes(10),
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         $user->forceDelete();
 
         $this->assertDatabaseHas('reservations', [
-            'id'      => 'reservation-uuid-001',
+            'id' => 'reservation-uuid-001',
             'user_id' => null,
         ]);
     }
 
     public function test_regular_soft_delete_preserves_fk_references(): void
     {
-        $user  = User::factory()->create();
+        $user = User::factory()->create();
         $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
-        $seat  = SeatModel::create([
-            'event_id'            => $event->id,
-            'row'                 => 'C',
-            'number'              => 3,
-            'price_amount'        => 5000,
-            'price_currency'      => 'USD',
+        $seat = SeatModel::create([
+            'event_id' => $event->id,
+            'row' => 'C',
+            'number' => 3,
+            'price_amount' => 5000,
+            'price_currency' => 'USD',
             'reserved_by_user_id' => null,
         ]);
 
         \DB::table('tickets')->insert([
-            'id'                => 'ticket-uuid-002',
-            'event_id'          => $event->id,
-            'seat_id'           => $seat->id,
-            'user_id'           => $user->id,
-            'price_amount'      => 5000,
-            'price_currency'    => 'USD',
+            'id' => 'ticket-uuid-002',
+            'event_id' => $event->id,
+            'seat_id' => $seat->id,
+            'user_id' => $user->id,
+            'price_amount' => 5000,
+            'price_currency' => 'USD',
             'payment_reference' => 'txn_test_002',
-            'issued_at'         => now(),
-            'created_at'        => now(),
-            'updated_at'        => now(),
+            'issued_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         // Soft delete keeps the user row (with deleted_at set) → FK is preserved
@@ -132,7 +132,7 @@ class UserSoftDeleteTest extends TestCase
 
         $this->assertSoftDeleted('users', ['id' => $user->id]);
         $this->assertDatabaseHas('tickets', [
-            'id'      => 'ticket-uuid-002',
+            'id' => 'ticket-uuid-002',
             'user_id' => $user->id, // Still references the (soft-deleted) user
         ]);
     }

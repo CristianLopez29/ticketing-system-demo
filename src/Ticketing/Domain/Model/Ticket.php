@@ -44,8 +44,6 @@ class Ticket extends AggregateRoot
         return $ticket;
     }
 
-
-
     public function id(): string
     {
         return $this->id;

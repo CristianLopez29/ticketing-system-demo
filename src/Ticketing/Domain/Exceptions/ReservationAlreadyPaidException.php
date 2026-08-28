@@ -6,6 +6,4 @@ namespace Src\Ticketing\Domain\Exceptions;
 
 use RuntimeException;
 
-class ReservationAlreadyPaidException extends RuntimeException
-{
-}
+class ReservationAlreadyPaidException extends RuntimeException {}

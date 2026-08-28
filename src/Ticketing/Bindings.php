@@ -12,14 +12,13 @@ use Src\Shared\Domain\Services\UuidGenerator;
 use Src\Shared\Infrastructure\Services\PhpUuidGenerator;
 use Src\Ticketing\Application\Ports\AsyncDispatcher;
 use Src\Ticketing\Application\Ports\IdempotencyStore;
+use Src\Ticketing\Application\Ports\ReadModelCache;
+use Src\Ticketing\Application\Ports\SeatReadModel;
 use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Application\Ports\TransactionManager;
 use Src\Ticketing\Application\Ports\UserNotifier;
-use Src\Ticketing\Application\Ports\ReadModelCache;
-use Src\Ticketing\Application\Ports\SeatReadModel;
 use Src\Ticketing\Application\Queries\GetEventSeatsQueryHandler;
 use Src\Ticketing\Application\Queries\GetEventStatsQueryHandler;
-use Src\Ticketing\Infrastructure\Cache\LaravelReadModelCache;
 use Src\Ticketing\Application\UseCases\ProcessTicketPaymentUseCase;
 use Src\Ticketing\Application\UseCases\PurchaseSeasonTicketUseCase;
 use Src\Ticketing\Domain\Events\TicketSold;
@@ -31,6 +30,7 @@ use Src\Ticketing\Domain\Repositories\SeasonRepository;
 use Src\Ticketing\Domain\Repositories\SeasonTicketRepository;
 use Src\Ticketing\Domain\Repositories\SeatRepository;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
+use Src\Ticketing\Infrastructure\Cache\LaravelReadModelCache;
 use Src\Ticketing\Infrastructure\Console\Commands\CleanupExpiredReservations;
 use Src\Ticketing\Infrastructure\Jobs\LaravelAsyncDispatcher;
 use Src\Ticketing\Infrastructure\Listeners\InvalidateSeatsCacheOnTicketSold;
@@ -74,7 +74,8 @@ class Bindings extends ServiceProvider
         $this->app->bind(PendingRefundRepository::class, EloquentPendingRefundRepository::class);
 
         $this->app->bind(\Psr\Clock\ClockInterface::class, function () {
-            return new class implements \Psr\Clock\ClockInterface {
+            return new class implements \Psr\Clock\ClockInterface
+            {
                 public function now(): \DateTimeImmutable
                 {
                     return \Carbon\CarbonImmutable::now();

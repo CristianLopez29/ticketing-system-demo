@@ -6,6 +6,4 @@ namespace Src\Ticketing\Domain\Exceptions;
 
 use RuntimeException;
 
-class DuplicateRequestException extends RuntimeException
-{
-}
+class DuplicateRequestException extends RuntimeException {}

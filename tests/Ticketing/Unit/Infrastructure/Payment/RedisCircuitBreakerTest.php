@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Ticketing\Unit\Infrastructure\Payment;
 
-use Illuminate\Support\Facades\Redis;
 use Src\Ticketing\Domain\Exceptions\CircuitBreakerOpenException;
 use Src\Ticketing\Infrastructure\Payment\RedisCircuitBreaker;
 use Tests\TestCase;
@@ -19,7 +18,7 @@ class RedisCircuitBreakerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->circuitBreaker = new RedisCircuitBreaker();
+        $this->circuitBreaker = new RedisCircuitBreaker;
         $this->circuitBreaker->reset();
     }
 

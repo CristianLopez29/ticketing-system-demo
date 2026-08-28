@@ -25,17 +25,19 @@ class EloquentReservationRepositoryTest extends TestCase
     use RefreshDatabase;
 
     private EloquentReservationRepository $repository;
+
     private int $eventId;
+
     private int $userId;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->repository = new EloquentReservationRepository();
+        $this->repository = new EloquentReservationRepository;
 
-        $event         = EventModel::create(['name' => 'Test Event', 'total_seats' => 50]);
+        $event = EventModel::create(['name' => 'Test Event', 'total_seats' => 50]);
         $this->eventId = $event->id;
-        $this->userId  = User::factory()->create()->id;
+        $this->userId = User::factory()->create()->id;
     }
 
     // -------------------------------------------------------------------------
@@ -49,24 +51,24 @@ class EloquentReservationRepositoryTest extends TestCase
         string $createdAt,
     ): void {
         $seat = SeatModel::create([
-            'event_id'       => $this->eventId,
-            'row'            => 'A',
-            'number'         => rand(1, 9999),
-            'price_amount'   => 1000,
+            'event_id' => $this->eventId,
+            'row' => 'A',
+            'number' => rand(1, 9999),
+            'price_amount' => 1000,
             'price_currency' => 'EUR',
         ]);
 
         DB::table('reservations')->insert([
-            'id'             => $id,
-            'event_id'       => $this->eventId,
-            'seat_id'        => $seat->id,
-            'user_id'        => $this->userId,
-            'status'         => $status,
-            'price_amount'   => 1000,
+            'id' => $id,
+            'event_id' => $this->eventId,
+            'seat_id' => $seat->id,
+            'user_id' => $this->userId,
+            'status' => $status,
+            'price_amount' => 1000,
             'price_currency' => 'EUR',
-            'expires_at'     => $expiresAt,
-            'created_at'     => $createdAt,
-            'updated_at'     => $createdAt,
+            'expires_at' => $expiresAt,
+            'created_at' => $createdAt,
+            'updated_at' => $createdAt,
         ]);
     }
 
@@ -76,7 +78,7 @@ class EloquentReservationRepositoryTest extends TestCase
 
     public function test_returns_empty_array_when_no_expired_reservations(): void
     {
-        $now    = new DateTimeImmutable();
+        $now = new DateTimeImmutable;
         $result = $this->repository->findExpiredChunked($now, 100);
 
         $this->assertSame([], $result);
@@ -85,11 +87,11 @@ class EloquentReservationRepositoryTest extends TestCase
     public function test_returns_only_pending_payment_expired_reservations(): void
     {
         $past = now()->subHour()->toIso8601String();
-        $now  = new DateTimeImmutable();
+        $now = new DateTimeImmutable;
 
         $this->insertReservation('res-pending', ReservationStatus::PENDING_PAYMENT->value, $past, $past);
-        $this->insertReservation('res-paid',    ReservationStatus::PAID->value,            $past, $past);
-        $this->insertReservation('res-cancelled', ReservationStatus::CANCELLED->value,     $past, $past);
+        $this->insertReservation('res-paid', ReservationStatus::PAID->value, $past, $past);
+        $this->insertReservation('res-cancelled', ReservationStatus::CANCELLED->value, $past, $past);
 
         $batch = $this->repository->findExpiredChunked($now, 100);
 
@@ -100,7 +102,7 @@ class EloquentReservationRepositoryTest extends TestCase
     public function test_respects_limit_per_batch(): void
     {
         $past = now()->subHour()->toIso8601String();
-        $now  = new DateTimeImmutable();
+        $now = new DateTimeImmutable;
 
         for ($i = 1; $i <= 5; $i++) {
             $this->insertReservation("res-{$i}", ReservationStatus::PENDING_PAYMENT->value, $past, $past);
@@ -113,7 +115,7 @@ class EloquentReservationRepositoryTest extends TestCase
 
     public function test_cursor_returns_next_page_without_overlap(): void
     {
-        $now = new DateTimeImmutable();
+        $now = new DateTimeImmutable;
 
         // Insert 4 reservations with distinct created_at timestamps
         $base = now()->subHours(4);
@@ -130,7 +132,7 @@ class EloquentReservationRepositoryTest extends TestCase
         $last = end($page1);
         assert($last instanceof \Src\Ticketing\Domain\Model\Reservation);
         $afterCreatedAt = $last->createdAt()->format(DateTimeImmutable::ATOM);
-        $afterId        = $last->id();
+        $afterId = $last->id();
 
         // Second page: next 2 records — no overlap with first page
         $page2 = $this->repository->findExpiredChunked($now, 2, $afterCreatedAt, $afterId);
@@ -145,9 +147,9 @@ class EloquentReservationRepositoryTest extends TestCase
 
     public function test_third_page_is_empty_when_all_records_consumed(): void
     {
-        $now       = new DateTimeImmutable();
+        $now = new DateTimeImmutable;
         $expiresAt = now()->subMinutes(1)->toIso8601String();
-        $base      = now()->subHours(2);
+        $base = now()->subHours(2);
 
         for ($i = 1; $i <= 4; $i++) {
             $createdAt = $base->addMinutes($i)->toIso8601String();
@@ -179,8 +181,8 @@ class EloquentReservationRepositoryTest extends TestCase
     public function test_does_not_return_non_expired_reservations(): void
     {
         $future = now()->addHour()->toIso8601String();
-        $past   = now()->subHour()->toIso8601String();
-        $now    = new DateTimeImmutable();
+        $past = now()->subHour()->toIso8601String();
+        $now = new DateTimeImmutable;
 
         $this->insertReservation('res-future', ReservationStatus::PENDING_PAYMENT->value, $future, $past);
 

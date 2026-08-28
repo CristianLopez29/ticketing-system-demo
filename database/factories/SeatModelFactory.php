@@ -14,12 +14,12 @@ class SeatModelFactory extends Factory
         static $numberCounter = 1;
 
         return [
-            'event_id'           => 1,
-            'row'                => $this->faker->randomElement(['A', 'B', 'C', 'D']),
+            'event_id' => 1,
+            'row' => $this->faker->randomElement(['A', 'B', 'C', 'D']),
             // Custom unique implementation per PHP instance for tests
-            'number'             => $numberCounter++,
-            'price_amount'       => 5000,
-            'price_currency'     => 'USD',
+            'number' => $numberCounter++,
+            'price_amount' => 5000,
+            'price_currency' => 'USD',
             'reserved_by_user_id' => null,
         ];
     }

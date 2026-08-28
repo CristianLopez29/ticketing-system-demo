@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Ticketing\Unit\Infrastructure\Listeners;
 
-use Mockery;
-use Mockery\MockInterface;
 use Illuminate\Cache\TaggedCache;
 use Illuminate\Support\Facades\Cache;
+use Mockery;
 use Src\Ticketing\Domain\Events\TicketSold;
 use Src\Ticketing\Domain\ValueObjects\SeatId;
 use Src\Ticketing\Infrastructure\Listeners\InvalidateSeatsCacheOnTicketSold;
@@ -27,8 +26,8 @@ class InvalidateSeatsCacheOnTicketSoldTest extends TestCase
             ->andReturn($taggedCache);
 
         // Act
-        $event    = new TicketSold(eventId: 42, seatId: new SeatId(1), userId: 7);
-        $listener = new InvalidateSeatsCacheOnTicketSold();
+        $event = new TicketSold(eventId: 42, seatId: new SeatId(1), userId: 7);
+        $listener = new InvalidateSeatsCacheOnTicketSold;
         $listener->handle($event);
 
         // Assert is handled by Mockery expectations above
@@ -38,7 +37,7 @@ class InvalidateSeatsCacheOnTicketSoldTest extends TestCase
     public function test_it_uses_event_id_tag_to_scope_the_flush(): void
     {
         // Ensure the tag matches the event id from the domain event
-        $eventId     = 99;
+        $eventId = 99;
         $taggedCache = Mockery::mock(TaggedCache::class);
         $taggedCache->shouldReceive('flush')->once()->andReturn(true);
 
@@ -47,8 +46,8 @@ class InvalidateSeatsCacheOnTicketSoldTest extends TestCase
             ->with(["event:{$eventId}"])
             ->andReturn($taggedCache);
 
-        $event    = new TicketSold(eventId: $eventId, seatId: new SeatId(5), userId: 3);
-        $listener = new InvalidateSeatsCacheOnTicketSold();
+        $event = new TicketSold(eventId: $eventId, seatId: new SeatId(5), userId: 3);
+        $listener = new InvalidateSeatsCacheOnTicketSold;
         $listener->handle($event);
 
         $this->addToAssertionCount(1);

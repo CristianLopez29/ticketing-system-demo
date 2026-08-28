@@ -14,9 +14,9 @@ class EloquentPendingRefundRepository implements PendingRefundRepository
         DB::table('pending_refunds')->insert([
             'transaction_id' => $transactionId,
             'reservation_id' => $reservationId,
-            'reason'         => $reason,
-            'created_at'     => now(),
-            'updated_at'     => now(),
+            'reason' => $reason,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
     }
 }

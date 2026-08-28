@@ -22,11 +22,14 @@ use Src\Ticketing\Domain\Exceptions\CircuitBreakerOpenException;
  */
 final class RedisCircuitBreaker
 {
-    private const FAILURE_THRESHOLD        = 5;
-    private const FAILURE_WINDOW_SECONDS   = 60;
-    private const OPEN_DURATION_SECONDS    = 30;
+    private const FAILURE_THRESHOLD = 5;
 
-    private const KEY_FAILURES   = 'circuit_breaker:payment:failures';
+    private const FAILURE_WINDOW_SECONDS = 60;
+
+    private const OPEN_DURATION_SECONDS = 30;
+
+    private const KEY_FAILURES = 'circuit_breaker:payment:failures';
+
     private const KEY_OPEN_UNTIL = 'circuit_breaker:payment:open_until';
 
     /**
@@ -35,7 +38,7 @@ final class RedisCircuitBreaker
     public function guardOrFail(): void
     {
         if ($this->isOpen()) {
-            throw new CircuitBreakerOpenException();
+            throw new CircuitBreakerOpenException;
         }
     }
 
@@ -78,6 +81,7 @@ final class RedisCircuitBreaker
     public function failureCount(): int
     {
         $raw = Redis::get(self::KEY_FAILURES);
+
         return is_numeric($raw) ? (int) $raw : 0;
     }
 

@@ -17,7 +17,7 @@ readonly class ReservationPaid implements DomainEvent
         public SeatId $seatId,
         public int $userId
     ) {
-        $this->occurredOn = new \DateTimeImmutable();
+        $this->occurredOn = new \DateTimeImmutable;
     }
 
     public function occurredOn(): \DateTimeImmutable

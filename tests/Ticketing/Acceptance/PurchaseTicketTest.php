@@ -92,7 +92,7 @@ class PurchaseTicketTest extends TestCase
         Event::assertNotDispatched(TicketSold::class);
 
         // Ensure Job was dispatched
-        Bus::assertDispatched(ProcessTicketPayment::class , function ($job) {
+        Bus::assertDispatched(ProcessTicketPayment::class, function ($job) {
             return true;
         });
     }
@@ -174,18 +174,18 @@ class PurchaseTicketTest extends TestCase
         Sanctum::actingAs($user);
 
         $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
-        $seat  = SeatModel::create([
-            'event_id'           => $event->id,
-            'row'                => 'A',
-            'number'             => 1,
-            'price_amount'       => 5000,
-            'price_currency'     => 'USD',
+        $seat = SeatModel::create([
+            'event_id' => $event->id,
+            'row' => 'A',
+            'number' => 1,
+            'price_amount' => 5000,
+            'price_currency' => 'USD',
             'reserved_by_user_id' => null,
         ]);
 
         $response = $this->postJson('/api/tickets/purchase', [
             'event_id' => $event->id,
-            'seat_id'  => $seat->id,
+            'seat_id' => $seat->id,
         ], [
             'Idempotency-Key' => 'not-a-valid-uuid',
         ]);
@@ -202,12 +202,12 @@ class PurchaseTicketTest extends TestCase
         Sanctum::actingAs($user);
 
         $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
-        $seat  = SeatModel::create([
-            'event_id'           => $event->id,
-            'row'                => 'A',
-            'number'             => 2,
-            'price_amount'       => 5000,
-            'price_currency'     => 'USD',
+        $seat = SeatModel::create([
+            'event_id' => $event->id,
+            'row' => 'A',
+            'number' => 2,
+            'price_amount' => 5000,
+            'price_currency' => 'USD',
             'reserved_by_user_id' => null,
         ]);
 
@@ -215,7 +215,7 @@ class PurchaseTicketTest extends TestCase
 
         $response = $this->postJson('/api/tickets/purchase', [
             'event_id' => $event->id,
-            'seat_id'  => $seat->id,
+            'seat_id' => $seat->id,
         ], [
             'Idempotency-Key' => '550e8400-e29b-41d4-a716-446655440000',
         ]);

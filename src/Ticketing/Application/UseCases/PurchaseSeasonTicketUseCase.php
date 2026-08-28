@@ -115,7 +115,7 @@ class PurchaseSeasonTicketUseCase
                         $totalPrice = $seat->price();
                     } else {
                         if ($totalPrice->currency() !== $seat->price()->currency()) {
-                            throw new InvalidArgumentException("Currency mismatch across events in season.");
+                            throw new InvalidArgumentException('Currency mismatch across events in season.');
                         }
                         $totalPrice = $totalPrice->add($seat->price());
                     }
@@ -159,7 +159,7 @@ class PurchaseSeasonTicketUseCase
     }
 
     /**
-     * @param int[] $reservedStockEventIds
+     * @param  int[]  $reservedStockEventIds
      */
     private function compensate(string $idempotencyKey, array $reservedStockEventIds): void
     {
@@ -169,6 +169,4 @@ class PurchaseSeasonTicketUseCase
             $this->stockManager->revertReservation($eventId);
         }
     }
-
-
 }

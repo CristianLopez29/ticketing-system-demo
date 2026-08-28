@@ -9,7 +9,8 @@ use Src\Ticketing\Application\Ports\IdempotencyStore;
 
 class RedisIdempotencyStore implements IdempotencyStore
 {
-    private const PREFIX        = 'purchase:idempotency:';
+    private const PREFIX = 'purchase:idempotency:';
+
     private const RESULT_SUFFIX = ':result';
 
     public function markAsProcessed(string $key, int $ttlMinutes = 10): bool

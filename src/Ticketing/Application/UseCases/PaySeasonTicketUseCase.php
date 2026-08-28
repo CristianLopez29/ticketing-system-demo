@@ -18,7 +18,7 @@ class PaySeasonTicketUseCase
     ) {}
 
     /**
-     * @throws AuthorizationException  If the authenticated user does not own the ticket.
+     * @throws AuthorizationException If the authenticated user does not own the ticket.
      * @throws InvalidArgumentException If the season ticket is not found.
      */
     public function execute(string $seasonTicketId, int $userId): SeasonTicket
