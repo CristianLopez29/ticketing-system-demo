@@ -39,9 +39,11 @@ Route::get('/readiness', function (): JsonResponse {
         $status = 'degraded';
     }
 
+    // A degraded readiness probe must fail the HTTP status too: an uptime monitor watches
+    // the status code, so answering 200 with "degraded" in the body alerts nobody.
     return new JsonResponse([
         'status' => $status,
         'checks' => $checks,
         'time' => now()->toISOString(),
-    ], Response::HTTP_OK);
+    ], $status === 'ok' ? Response::HTTP_OK : Response::HTTP_SERVICE_UNAVAILABLE);
 });
