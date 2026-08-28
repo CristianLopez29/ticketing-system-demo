@@ -4,55 +4,61 @@ declare(strict_types=1);
 
 namespace Tests\Integration;
 
+use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 /**
- * Verifies that RedisIdempotencyStore relies on Redis SET NX atomicity.
+ * Verifies the Redis SET NX atomicity that RedisIdempotencyStore is built on:
+ * two Cache::add() calls with the same key must succeed exactly once, which is
+ * the whole idempotency guarantee of the purchase flow.
  *
- * Run with CACHE_STORE=redis (Redis must be available — run inside Docker):
- *   php artisan test --testsuite=Integration
- *
- * This test is intentionally simple: it verifies that two sequential Cache::add()
- * calls with the same key only succeed once, which is the foundation of the
- * idempotency guarantee in production.
+ * It addresses the redis store explicitly rather than the default one. In
+ * production and in .env.testing the default *is* redis, but phpunit.xml pins
+ * the suite to the array store, and array semantics would prove nothing here.
  */
 class RedisIdempotencyTest extends TestCase
 {
+    private Repository $redisCache;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        if (config('cache.default') !== 'redis') {
-            $this->markTestSkipped('This test requires CACHE_STORE=redis. Run with: CACHE_STORE=redis php artisan test --testsuite=Integration');
-        }
+        $this->redisCache = Cache::store('redis');
     }
 
-    public function test_cache_add_is_atomic_only_first_call_succeeds(): void
+    public function test_it_only_lets_the_first_add_of_a_key_through(): void
     {
-        $key = 'idempotency:test:'.uniqid('', true);
+        $key = $this->uniqueKey();
 
-        $first = Cache::add($key, 'processed', 60);
-        $second = Cache::add($key, 'processed', 60);
+        $first = $this->redisCache->add($key, 'processed', 60);
+        $second = $this->redisCache->add($key, 'processed', 60);
 
         $this->assertTrue($first, 'First add() must return true (key did not exist)');
         $this->assertFalse($second, 'Second add() must return false (key already exists — SET NX semantics)');
 
-        Cache::forget($key);
+        $this->redisCache->forget($key);
     }
 
-    public function test_cache_add_returns_true_after_expiry(): void
+    public function test_it_lets_a_key_through_again_once_its_ttl_expires(): void
     {
-        $key = 'idempotency:test:'.uniqid('', true);
+        $key = $this->uniqueKey();
 
-        $first = Cache::add($key, 'processed', 1); // 1-second TTL
-        $this->assertTrue($first);
+        $this->assertTrue($this->redisCache->add($key, 'processed', 1));
 
-        sleep(2); // Let key expire
+        sleep(2); // Outlive the 1-second TTL
 
-        $second = Cache::add($key, 'processed', 60);
-        $this->assertTrue($second, 'After TTL expiry, add() must succeed again');
+        $this->assertTrue(
+            $this->redisCache->add($key, 'processed', 60),
+            'After TTL expiry, add() must succeed again'
+        );
 
-        Cache::forget($key);
+        $this->redisCache->forget($key);
+    }
+
+    private function uniqueKey(): string
+    {
+        return 'idempotency:test:'.uniqid('', true);
     }
 }
