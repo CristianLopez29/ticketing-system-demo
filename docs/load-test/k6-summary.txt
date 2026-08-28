@@ -1,0 +1,25 @@
+     ✓ seat was sold (202) or contention was rejected (409/422)
+     ✓ no server error
+
+     checks.........................: 100.00% ✓ 10114      ✗ 0     
+     data_received..................: 3.7 MB  98 kB/s
+     data_sent......................: 1.6 MB  44 kB/s
+     http_req_blocked...............: avg=292.64µs min=55.1µs   med=244.7µs  max=5.34ms p(90)=417.08µs p(95)=549.21µs
+     http_req_connecting............: avg=201.11µs min=37.79µs  med=157.29µs max=5.24ms p(90)=288.88µs p(95)=414.09µs
+     http_req_duration..............: avg=5.63s    min=932.35ms med=6.92s    max=7.27s  p(90)=7.16s    p(95)=7.19s   
+       { expected_response:true }...: avg=5.63s    min=932.35ms med=6.92s    max=7.27s  p(90)=7.16s    p(95)=7.19s   
+   ✓ http_req_failed................: 0.00%   ✓ 0          ✗ 5057  
+     http_req_receiving.............: avg=1.28ms   min=65.5µs   med=1.06ms   max=9.14ms p(90)=2.05ms   p(95)=2.64ms  
+     http_req_sending...............: avg=75.06µs  min=13.89µs  med=63.5µs   max=1.69ms p(90)=105µs    p(95)=139.8µs 
+     http_req_tls_handshaking.......: avg=0s       min=0s       med=0s       max=0s     p(90)=0s       p(95)=0s      
+     http_req_waiting...............: avg=5.63s    min=931.16ms med=6.92s    max=7.27s  p(90)=7.16s    p(95)=7.19s   
+     http_reqs......................: 5057    135.91649/s
+     iteration_duration.............: avg=5.63s    min=933.01ms med=6.92s    max=7.27s  p(90)=7.16s    p(95)=7.19s   
+     iterations.....................: 5057    135.91649/s
+     purchase_accepted..............: 100     2.68769/s
+     purchase_rejected..............: 4957    133.228799/s
+   ✓ purchase_server_errors.........: 0       0/s
+   ✓ purchase_throttled.............: 0       0/s
+   ✓ purchase_unexpected............: 0       0/s
+     vus............................: 85      min=66       max=1000
+     vus_max........................: 1000    min=1000     max=1000

@@ -1,0 +1,10 @@
+seats_total          = 100
+seats_reserved       = 100
+reservations         = 100
+double_sold_seats    = 0
+tickets_issued       = 100
+reservations_paid    = 100
+redis_stock          = '0'
+jobs_pending         = 0
+failed_jobs          = 0
+pending_refunds      = 0
