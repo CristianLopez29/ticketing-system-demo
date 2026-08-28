@@ -1,15 +1,16 @@
 # Ticketing System — High-Concurrency Ticket Reservation
 
 [![CI](https://github.com/CristianLopez29/ticketing-system-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/CristianLopez29/ticketing-system-demo/actions/workflows/ci.yml)
-[![Static Analysis](https://github.com/CristianLopez29/ticketing-system-demo/actions/workflows/static-analysis.yml/badge.svg)](https://github.com/CristianLopez29/ticketing-system-demo/actions/workflows/static-analysis.yml)
+[![Code Quality](https://github.com/CristianLopez29/ticketing-system-demo/actions/workflows/static-analysis.yml/badge.svg)](https://github.com/CristianLopez29/ticketing-system-demo/actions/workflows/static-analysis.yml)
 [![PHP 8.4](https://img.shields.io/badge/PHP-8.4-777BB4?logo=php&logoColor=white)](https://www.php.net/releases/8.4/en.php)
 [![Laravel 12](https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel&logoColor=white)](https://laravel.com)
 [![PHPStan level 9](https://img.shields.io/badge/PHPStan-level%209-2a5ea7)](phpstan.neon)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-The first two badges are live status from this repository's **GitHub Actions** workflows —
-the full PHPUnit suite against MySQL 8 + Redis 7, and Larastan level 9. The rest are static
-version and licence labels.
+The first two badges are live status from this repository's **GitHub Actions** workflows:
+**CI** runs the full PHPUnit suite against MySQL 8 + Redis 7, and **Code Quality** runs
+Larastan level 9, Pint and a Composer CVE audit as three independent jobs. The rest are
+static version and licence labels.
 
 A ticket reservation and purchasing system built to demonstrate **Hexagonal Architecture**, **Domain-Driven Design**, and **high-concurrency data integrity** under extreme load.
 
@@ -535,8 +536,12 @@ docs/load-test/                      # Committed k6 artifacts backing the README
 - All changes via feature branches + Pull Requests. No direct pushes to `main`.
 - Conventional Commits: `type(scope): description`
 - Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
-- CI (GitHub Actions) runs the full PHPUnit suite against MySQL 8 + Redis 7, plus PHPStan
-  level 9. Pint is a local gate: run `./vendor/bin/pint` before committing.
+- CI (GitHub Actions) runs the full PHPUnit suite against MySQL 8 + Redis 7, plus three
+  quality jobs: PHPStan level 9, `pint --test` and `composer audit`. Run
+  `./vendor/bin/pint` before committing so the style job stays green.
+- The audit job passes `--abandoned=report`: `doctrine/annotations` is abandoned and is a
+  transitive dependency of the Swagger generator. It is not a vulnerability and does not
+  gate a merge.
 
 ---
 
