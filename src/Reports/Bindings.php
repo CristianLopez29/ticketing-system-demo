@@ -23,7 +23,7 @@ class Bindings extends ServiceProvider
 
     public function boot(): void
     {
-        Route::middleware(['api', 'auth:sanctum', 'role:admin'])
+        Route::middleware(['api', 'auth:sanctum', 'role:admin', 'throttle:30,1'])
             ->prefix('api/reports')
             ->group(function () {
                 Route::get('/download', [ReportsController::class, 'download']);
