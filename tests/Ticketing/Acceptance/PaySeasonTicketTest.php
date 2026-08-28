@@ -89,7 +89,7 @@ class PaySeasonTicketTest extends TestCase
         // Assert
         $response->assertStatus(403);
         $response->assertJsonFragment([
-            'message' => 'You are not authorized to pay for this season ticket.',
+            'error' => 'You are not authorized to pay for this season ticket.',
         ]);
 
         // Ticket must remain in pending_payment
