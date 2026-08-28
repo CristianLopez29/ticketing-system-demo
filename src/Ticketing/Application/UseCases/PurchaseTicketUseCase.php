@@ -12,6 +12,7 @@ use Src\Ticketing\Application\Ports\AsyncDispatcher;
 use Src\Ticketing\Application\Ports\IdempotencyStore;
 use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Application\Ports\TransactionManager;
+use Src\Ticketing\Domain\Exceptions\EventSoldOutException;
 use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Src\Ticketing\Domain\Model\Reservation;
 use Src\Ticketing\Domain\Repositories\ReservationRepository;
@@ -44,7 +45,7 @@ class PurchaseTicketUseCase
             // Distributed stock check (Redis) to reduce DB load
             $hasStock = $this->stockManager->attemptToReserve($request->eventId);
             if (! $hasStock) {
-                throw new RuntimeException('Event is completely sold out.');
+                throw new EventSoldOutException('Event is completely sold out.');
             }
 
             // Phase 1: Sync reservation & acknowledgement

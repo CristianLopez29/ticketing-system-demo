@@ -74,6 +74,32 @@ return [
             'replace_placeholders' => true,
         ],
 
+        /*
+         | Production default. JSON lines so the VPS can grep, ship or parse them without a
+         | regex over Laravel's default text format, rotated daily so a long-lived server
+         | never accumulates one unbounded laravel.log.
+         */
+        'daily_json' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/app.log'),
+            'level' => env('LOG_LEVEL', 'info'),
+            'days' => env('LOG_DAILY_DAYS', 14),
+            'formatter' => JsonFormatter::class,
+            'replace_placeholders' => true,
+        ],
+
+        /*
+         | Access log, deliberately a separate file from the application log: one is a
+         | high-volume traffic record, the other is what you read when something breaks.
+         */
+        'access' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/access.log'),
+            'level' => 'info',
+            'days' => env('LOG_ACCESS_DAYS', 14),
+            'formatter' => JsonFormatter::class,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

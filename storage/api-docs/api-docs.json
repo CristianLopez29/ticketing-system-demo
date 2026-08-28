@@ -333,9 +333,10 @@
                                         "example": 12
                                     },
                                     "idempotency_key": {
-                                        "description": "Unique key to prevent duplicate reservations (UUID recommended)",
+                                        "description": "Unique client-generated UUID v4 preventing duplicate reservations",
                                         "type": "string",
-                                        "example": "uuid-12345"
+                                        "format": "uuid",
+                                        "example": "550e8400-e29b-41d4-a716-446655440000"
                                     }
                                 },
                                 "type": "object"
