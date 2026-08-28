@@ -56,7 +56,7 @@ jobs:
         with:
           php-version: "8.4"
           extensions: mbstring, bcmath, pdo_mysql, redis
-          coverage: none
+          coverage: pcov
 
       - name: Install dependencies
         run: |
@@ -71,5 +71,25 @@ jobs:
       - name: Run migrations
         run: php artisan migrate --force
 
-      - name: Run tests
-        run: php artisan test
+      # phpunit rather than `php artisan test`: the artisan wrapper accepts
+      # --coverage-clover but never writes the file, so coverage would be silently
+      # empty. Same suites, same bootstrap, one run instead of two.
+      - name: Run tests with coverage
+        run: vendor/bin/phpunit --coverage-clover=coverage.xml
+
+      # fail_ci_if_error stays false on purpose: a Codecov outage, or a pull request
+      # from a fork (where secrets are not exposed), must not turn the test gate red.
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          fail_ci_if_error: false
+
+      - name: Keep the coverage report as an artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-clover
+          path: coverage.xml
+          retention-days: 14

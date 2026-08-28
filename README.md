@@ -2,15 +2,17 @@
 
 [![CI](https://github.com/CristianLopez29/ticketing-system-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/CristianLopez29/ticketing-system-demo/actions/workflows/ci.yml)
 [![Code Quality](https://github.com/CristianLopez29/ticketing-system-demo/actions/workflows/static-analysis.yml/badge.svg)](https://github.com/CristianLopez29/ticketing-system-demo/actions/workflows/static-analysis.yml)
+[![codecov](https://codecov.io/gh/CristianLopez29/ticketing-system-demo/branch/main/graph/badge.svg)](https://codecov.io/gh/CristianLopez29/ticketing-system-demo)
 [![PHP 8.4](https://img.shields.io/badge/PHP-8.4-777BB4?logo=php&logoColor=white)](https://www.php.net/releases/8.4/en.php)
 [![Laravel 12](https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel&logoColor=white)](https://laravel.com)
 [![PHPStan level 9](https://img.shields.io/badge/PHPStan-level%209-2a5ea7)](phpstan.neon)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-The first two badges are live status from this repository's **GitHub Actions** workflows:
-**CI** runs the full PHPUnit suite against MySQL 8 + Redis 7, and **Code Quality** runs
-Larastan level 9, Pint and a Composer CVE audit as three independent jobs. The rest are
-static version and licence labels.
+The first three badges are live. **CI** and **Code Quality** are this repository's
+**GitHub Actions** workflows — the full PHPUnit suite against MySQL 8 + Redis 7, and
+Larastan level 9, Pint and a Composer CVE audit as three independent jobs. **codecov**
+is the line coverage published by the CI run. The rest are static version and licence
+labels.
 
 A ticket reservation and purchasing system built to demonstrate **Hexagonal Architecture**, **Domain-Driven Design**, and **high-concurrency data integrity** under extreme load.
 
@@ -390,7 +392,14 @@ docker compose exec laravel php artisan test --testsuite=Integration
 # Static analysis and formatting
 docker compose exec laravel ./vendor/bin/phpstan analyse --memory-limit=2G
 docker compose exec laravel ./vendor/bin/pint --test
+
+# Coverage, the way CI measures it. `php artisan test` accepts --coverage-clover but
+# never writes the file, so the report has to come from phpunit directly.
+docker compose exec laravel php -d pcov.enabled=1 -d xdebug.mode=off   vendor/bin/phpunit --coverage-text
 ```
+
+Coverage is **informational, never a gate** — see [codecov.yml](codecov.yml). A drop does
+not block a merge; the failing test, the PHPStan error or the style violation does.
 
 ### Load Testing with k6
 
