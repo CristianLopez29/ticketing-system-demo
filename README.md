@@ -7,6 +7,10 @@
 [![PHPStan level 9](https://img.shields.io/badge/PHPStan-level%209-2a5ea7)](phpstan.neon)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+The first two badges are live status from this repository's **GitHub Actions** workflows —
+the full PHPUnit suite against MySQL 8 + Redis 7, and Larastan level 9. The rest are static
+version and licence labels.
+
 A ticket reservation and purchasing system built to demonstrate **Hexagonal Architecture**, **Domain-Driven Design**, and **high-concurrency data integrity** under extreme load.
 
 > **Portfolio Focus:** This project showcases how to prevent race conditions when 1,000 users simultaneously compete for 100 tickets.
@@ -17,34 +21,40 @@ A ticket reservation and purchasing system built to demonstrate **Hexagonal Arch
 
 The claim above is a measurement, not a design intention. Below is the unedited output of
 [`tests/Load/k6/purchase_stress_test.js`](tests/Load/k6/purchase_stress_test.js):
-**1,000 distinct authenticated buyers, 5,057 purchase attempts, 100 seats.**
+**1,000 distinct authenticated buyers, 3,691 purchase attempts, 100 seats.**
+
+> **Measured locally, not on the production VPS.** The run below was executed on a Windows 10
+> workstation (12 logical CPUs, 8 GB allocated to Docker Desktop 29.7.2), with k6 v2.0.0 driving
+> the Laravel Sail container from inside the compose network. The deployed instance runs a
+> different stack entirely — Nginx and PHP-FPM, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) —
+> on hardware these numbers say nothing about. **Read the integrity column, not the latency one.**
 
 ```text
      ✓ seat was sold (202) or contention was rejected (409/422)
      ✓ no server error
 
-     checks.........................: 100.00% ✓ 10114      ✗ 0
-     data_received..................: 3.7 MB  98 kB/s
-     data_sent......................: 1.6 MB  44 kB/s
-     http_req_blocked...............: avg=292.64µs min=55.1µs   med=244.7µs  max=5.34ms p(90)=417.08µs p(95)=549.21µs
-     http_req_connecting............: avg=201.11µs min=37.79µs  med=157.29µs max=5.24ms p(90)=288.88µs p(95)=414.09µs
-     http_req_duration..............: avg=5.63s    min=932.35ms med=6.92s    max=7.27s  p(90)=7.16s    p(95)=7.19s
-       { expected_response:true }...: avg=5.63s    min=932.35ms med=6.92s    max=7.27s  p(90)=7.16s    p(95)=7.19s
-   ✓ http_req_failed................: 0.00%   ✓ 0          ✗ 5057
-     http_req_receiving.............: avg=1.28ms   min=65.5µs   med=1.06ms   max=9.14ms p(90)=2.05ms   p(95)=2.64ms
-     http_req_sending...............: avg=75.06µs  min=13.89µs  med=63.5µs   max=1.69ms p(90)=105µs    p(95)=139.8µs
-     http_req_tls_handshaking.......: avg=0s       min=0s       med=0s       max=0s     p(90)=0s       p(95)=0s
-     http_req_waiting...............: avg=5.63s    min=931.16ms med=6.92s    max=7.27s  p(90)=7.16s    p(95)=7.19s
-     http_reqs......................: 5057    135.91649/s
-     iteration_duration.............: avg=5.63s    min=933.01ms med=6.92s    max=7.27s  p(90)=7.16s    p(95)=7.19s
-     iterations.....................: 5057    135.91649/s
-     purchase_accepted..............: 100     2.68769/s
-     purchase_rejected..............: 4957    133.228799/s
+     checks.........................: 100.00% ✓ 7382      ✗ 0
+     data_received..................: 2.8 MB  74 kB/s
+     data_sent......................: 1.2 MB  31 kB/s
+     http_req_blocked...............: avg=383.11µs min=86.4µs med=263.79µs max=18.28ms p(90)=555.69µs p(95)=884µs
+     http_req_connecting............: avg=272.32µs min=60.6µs med=171.8µs  max=17.96ms p(90)=403.6µs  p(95)=666.65µs
+     http_req_duration..............: avg=7.96s    min=2.64s  med=8.67s    max=10.33s  p(90)=10.13s   p(95)=10.23s
+       { expected_response:true }...: avg=7.96s    min=2.64s  med=8.67s    max=10.33s  p(90)=10.13s   p(95)=10.23s
+   ✓ http_req_failed................: 0.00%   ✓ 0         ✗ 3691
+     http_req_receiving.............: avg=1.58ms   min=67.8µs med=1.22ms   max=17.64ms p(90)=2.86ms   p(95)=3.71ms
+     http_req_sending...............: avg=84.15µs  min=10.9µs med=64.9µs   max=2.65ms  p(90)=117.5µs  p(95)=170.45µs
+     http_req_tls_handshaking.......: avg=0s       min=0s     med=0s       max=0s      p(90)=0s       p(95)=0s
+     http_req_waiting...............: avg=7.95s    min=2.64s  med=8.67s    max=10.33s  p(90)=10.13s   p(95)=10.23s
+     http_reqs......................: 3691    95.628042/s
+     iteration_duration.............: avg=7.96s    min=2.65s  med=8.67s    max=10.33s  p(90)=10.13s   p(95)=10.23s
+     iterations.....................: 3691    95.628042/s
+     purchase_accepted..............: 100     2.590844/s
+     purchase_rejected..............: 3591    93.037198/s
    ✓ purchase_server_errors.........: 0       0/s
    ✓ purchase_throttled.............: 0       0/s
    ✓ purchase_unexpected............: 0       0/s
-     vus............................: 85      min=66       max=1000
-     vus_max........................: 1000    min=1000     max=1000
+     vus............................: 134     min=64      max=1000
+     vus_max........................: 1000    min=1000    max=1000
 ```
 
 HTTP status codes alone do not prove integrity — the database does. Immediately after the
@@ -58,7 +68,7 @@ double_sold_seats    = 0
 tickets_issued       = 100
 reservations_paid    = 100
 redis_stock          = '0'
-jobs_pending         = 0
+redis_queue_pending  = 0
 failed_jobs          = 0
 pending_refunds      = 0
 ```
@@ -68,14 +78,15 @@ pending_refunds      = 0
 | Seats sold | exactly 100 | **100** |
 | Seats sold twice | 0 | **0** |
 | `500 Internal Server Error` | 0 | **0** |
-| Losing buyers rejected with 409/422 | all | **4,957 / 4,957** |
+| Losing buyers rejected with 409/422 | all | **3,591 / 3,591** |
 | Redis stock counter at the end | 0 | **0** |
 | Payment saga failures / stranded refunds | 0 | **0 / 0** |
 
-**About the latency.** `p(95) = 7.19s` is the cost of 1,000 virtual users queueing against
-PHP's built-in development server (`artisan serve`, 10 workers) inside Docker Desktop — it is
-not a production figure. It is reported unmodified because the number this project is about is
-the integrity column, not the throughput one. Raw artifacts:
+**About the latency.** `p(95) = 10.23s` is the cost of 1,000 virtual users queueing against
+PHP's built-in development server (`artisan serve`, 10 workers) inside Docker Desktop, plus one
+structured access-log write per request. It is a property of that test rig, not of the
+application, and it is reported unmodified because the number this project is about is the
+integrity column. Raw artifacts:
 [`k6-summary.txt`](docs/load-test/k6-summary.txt),
 [`k6-summary.json`](docs/load-test/k6-summary.json),
 [`db-verification.txt`](docs/load-test/db-verification.txt).
@@ -88,14 +99,17 @@ the integrity column, not the throughput one. Raw artifacts:
 
 1. [Proof Under Load](#proof-under-load)
 2. [Quick Start](#quick-start)
-3. [Architecture Overview](#architecture-overview)
-4. [Core Flow: Purchasing a Ticket](#core-flow-purchasing-a-ticket)
-5. [Tech Stack](#tech-stack)
-6. [API Endpoints](#api-endpoints)
-7. [Testing](#testing)
-8. [Project Structure](#project-structure)
-9. [Contribution Workflow](#contribution-workflow)
-10. [License](#license)
+3. [Trying the API](#trying-the-api)
+4. [Architecture Overview](#architecture-overview)
+5. [Core Flow: Purchasing a Ticket](#core-flow-purchasing-a-ticket)
+6. [Tech Stack](#tech-stack)
+7. [API Endpoints](#api-endpoints)
+8. [Configuration](#configuration)
+9. [Testing](#testing)
+10. [Deployment](#deployment)
+11. [Project Structure](#project-structure)
+12. [Contribution Workflow](#contribution-workflow)
+13. [License](#license)
 
 ---
 
@@ -132,6 +146,36 @@ docker compose exec laravel php artisan queue:work
 # Required: releases seats whose reservation expired (cleanup runs every minute).
 docker compose exec laravel php artisan schedule:work
 ```
+
+---
+
+## Trying the API
+
+Interactive OpenAPI 3 documentation is served at **`/api/documentation`** — every endpoint is
+callable from the browser with "Try it out".
+
+| Environment | Access |
+|---|---|
+| Local (`APP_ENV=local`) | Open, no credentials |
+| Anywhere else | HTTP **Basic auth** — `DOCS_AUTH_USERNAME` / `DOCS_AUTH_PASSWORD` |
+
+Basic auth rather than a bearer token for a deliberate reason: a browser cannot attach a
+bearer token to a plain navigation, so guarding the UI with `auth:sanctum` made it permanently
+unreachable. With `L5_SWAGGER_PROTECT=true` and no password set the route answers **503** — it
+never falls open.
+
+To exercise an authenticated endpoint:
+
+```bash
+# 1. Get a token
+curl -X POST http://localhost/api/login   -H 'Content-Type: application/json'   -d '{"email":"admin@example.com","password":"password"}'
+
+# 2. Use it — note the Idempotency-Key, which is required and must be a UUID v4
+curl -X POST http://localhost/api/tickets/purchase   -H 'Authorization: Bearer <token>'   -H 'Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000'   -H 'Content-Type: application/json'   -d '{"event_id":1,"seat_id":1}'
+```
+
+In Swagger UI, paste `Bearer <token>` into the **Authorize** dialog. Every response carries an
+`X-Correlation-ID` header that joins the application and access logs for that request.
 
 ---
 
@@ -227,6 +271,7 @@ buyer can retry without leaking stock.
 | API Docs | L5-Swagger / OpenAPI 3 |
 | Testing | PHPUnit 11 + Mockery, k6 (load/stress) |
 | Static analysis | Larastan (PHPStan) level 9, Laravel Pint |
+| Observability | Monolog JSON channels (app + access), Sentry (optional) |
 | CI | GitHub Actions (test suite + PHPStan) |
 
 There is no frontend: this is a JSON API, with no `package.json` and no build step.
@@ -238,10 +283,12 @@ There is no frontend: this is a JSON API, with no `package.json` and no build st
 ### Public
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| GET | `/` | Service index: name, status and links to the docs and probes |
 | POST | `/api/login` | Authenticate (5/min per email+IP, 30/min per IP) |
-| GET | `/api/events/{id}/seats` | List available seats (cursor pagination) |
-| GET | `/api/health` | Health probe |
-| GET | `/api/readiness` | Readiness probe (DB + cache) |
+| GET | `/api/events/{id}/seats` | List available seats, cursor pagination (60/min per IP) |
+| GET | `/api/health` | Liveness probe (60/min per IP) |
+| GET | `/api/readiness` | Readiness probe — **503** when MySQL or Redis is down (60/min per IP) |
+| GET | `/api/documentation` | Swagger UI (Basic auth outside local) |
 
 ### Authenticated
 | Method | Endpoint | Description |
@@ -256,11 +303,57 @@ There is no frontend: this is a JSON API, with no `package.json` and no build st
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/events/{id}/stats` | Event sales statistics (10/min) |
-| GET | `/api/reports/download` | Download report file |
+| GET | `/api/reports/download` | Download report file (30/min) |
 | POST | `/api/users/{id}/tokens/revoke-all` | Revoke all user tokens |
 
-The health probes are deliberately unauthenticated so orchestrators can call them; protect
-them at the network layer.
+The health probes are deliberately unauthenticated so orchestrators can call them; restrict
+them at the reverse proxy if you need to — see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
+Rate limiting lives in two places on purpose. The application throttles express business
+limits (per user, per email) that a web server cannot know about; the Nginx `limit_req` zone in
+`docker/production/nginx.conf` catches volumetric abuse before PHP is reached, and keeps
+answering when PHP-FPM has no free workers left.
+
+---
+
+## Configuration
+
+`.env.example` is the local and CI template. **For a public deployment start from
+[`.env.production.example`](.env.production.example)** — it flips the settings that matter and
+carries no development defaults.
+
+Variables introduced beyond a stock Laravel install:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `TRUSTED_PROXIES` | `127.0.0.1,::1` | Proxy IPs, or `*`. **Getting this wrong silently disables every per-IP rate limit**, because `$request->ip()` then returns the proxy address for all traffic. |
+| `CORS_ALLOWED_ORIGINS` | `*` | Comma-separated origins. `*` is defensible only while authentication stays bearer-token only (`supports_credentials` is false). |
+| `DOCS_AUTH_USERNAME` | `docs` | Basic-auth user for `/api/documentation`. |
+| `DOCS_AUTH_PASSWORD` | *(unset)* | Basic-auth password. Unset with protection on ⇒ the docs route answers 503. |
+| `L5_SWAGGER_PROTECT` | `APP_ENV !== 'local'` | Forces the docs behind Basic auth. |
+| `LOG_CHANNEL` | `stack` | Use `daily_json` in production: JSON lines, rotated daily. |
+| `LOG_DAILY_DAYS` / `LOG_ACCESS_DAYS` | `14` | Retention for the application and access logs. |
+| `SENTRY_LARAVEL_DSN` | *(empty)* | Error monitoring. Empty disables Sentry entirely. |
+| `SENTRY_TRACES_SAMPLE_RATE` | `0.1` | Performance-trace sampling. |
+| `PAYMENT_GATEWAY_DRIVER` | `fake` | `fake` or `stripe`. |
+| `SEASON_TICKET_DISCOUNT` | `20` | Season-ticket discount, percent. |
+
+### Logging
+
+Two JSON channels, deliberately separate files:
+
+| Channel | File | Contents |
+|---|---|---|
+| `daily_json` | `storage/logs/app-YYYY-MM-DD.log` | Application events, level `info` and above |
+| `access` | `storage/logs/access-YYYY-MM-DD.log` | One line per request: method, path, status, duration, IP, user id |
+
+Both rotate daily and carry the request's `correlation_id`, which is also returned to the
+client as `X-Correlation-ID`. Request bodies are never logged — `/api/login` carries passwords.
+
+Errors reach Sentry only when `SENTRY_LARAVEL_DSN` is set. Expected domain outcomes
+(sold out, seat taken, duplicate request, auth failure) are excluded in
+[`bootstrap/app.php`](bootstrap/app.php): a single contended sale would otherwise produce one
+event per losing buyer and bury the real faults.
 
 ---
 
@@ -299,6 +392,9 @@ docker compose exec laravel ./vendor/bin/pint --test
 ```
 
 ### Load Testing with k6
+
+Run manually with **k6 v2.0.0**, never as part of `php artisan test` and **never against the
+deployed VPS** — it is a deliberate denial-of-service against your own machine.
 
 `StressTestSeeder` provisions the sold-out scenario: one event, 100 seats, and **1,000
 buyers each with their own bearer token** — a single shared token would hit the per-user
@@ -340,6 +436,32 @@ contract, not as load noise.
 
 ---
 
+## Deployment
+
+Full procedure: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
+
+The production stack is [`compose.prod.yaml`](compose.prod.yaml) plus
+[`docker/production/`](docker/production/) — PHP-FPM 8.4, Nginx, a queue worker and a
+scheduler, with MySQL and Redis private to the stack. It publishes **no ports**: the only way
+in is a shared reverse proxy on a shared Docker network, so the host can run other
+applications alongside it.
+
+```bash
+cp .env.production.example .env      # fill every <placeholder>
+docker network create proxy || true
+docker compose -f compose.prod.yaml up -d --build
+docker compose -f compose.prod.yaml exec app php artisan key:generate --force
+docker compose -f compose.prod.yaml exec app php artisan migrate --force
+```
+
+`compose.yaml` is the Laravel Sail **development** runtime and is not used in production.
+
+Both background processes are mandatory and run as their own containers: without `worker`
+payment never completes, and without `scheduler` expired reservations never release their
+seats.
+
+---
+
 ## Project Structure
 
 ```
@@ -351,7 +473,8 @@ src/
 │   │   └── Services/UuidGenerator.php
 │   └── Infrastructure/
 │       ├── Audit/                   # Composite + Eloquent + File loggers
-│       ├── Middleware/              # CorrelationId, SecurityHeaders
+│       ├── Middleware/              # CorrelationId, RequestLogger, SecurityHeaders,
+│       │                            #   DocsBasicAuth, SwaggerUiCsp
 │       └── Persistence/Models/      # AuditLogModel
 │
 ├── Security/                        # Authentication context
@@ -396,9 +519,12 @@ tests/
 │   ├── Integration/                 # Repositories, jobs, real queue worker
 │   └── Acceptance/                  # HTTP flow tests
 ├── Security/Acceptance/             # Auth, throttling, token management
+├── Shared/Acceptance/               # Root index, health/readiness, docs Basic auth
 ├── Integration/                     # Redis idempotency
 └── Load/k6/                         # Stress tests (not a PHPUnit suite)
 
+docker/production/                   # Production image, Nginx and PHP config
+docs/DEPLOYMENT.md                   # VPS procedure
 docs/load-test/                      # Committed k6 artifacts backing the README numbers
 ```
 
