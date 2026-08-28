@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace Src\Ticketing\Infrastructure\Persistence;
 
 use Illuminate\Support\Facades\DB;
-use Src\Ticketing\Application\Ports\SeatReadModel;
 use Src\Ticketing\Domain\Model\Seat;
 use Src\Ticketing\Domain\Repositories\SeatRepository;
 use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Domain\ValueObjects\SeatId;
 
-class EloquentSeatRepository implements SeatReadModel, SeatRepository
+class EloquentSeatRepository implements SeatRepository
 {
     public function findAndLock(SeatId $id): ?Seat
     {
