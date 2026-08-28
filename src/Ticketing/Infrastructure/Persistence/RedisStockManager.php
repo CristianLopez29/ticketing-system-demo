@@ -31,7 +31,8 @@ class RedisStockManager implements StockManager
         if (Redis::get($key) === null) {
             $lockKey = "lock:rehydrate:{$eventId}";
             // Only one worker re-hydrates; others wait for the key to appear
-            if (Redis::set($lockKey, '1', ['nx', 'ex' => 5])) {
+            // @phpstan-ignore-next-line (the facade takes EX/NX as separate arguments; the raw phpredis stubs do not declare them)
+            if (Redis::set($lockKey, '1', 'EX', 5, 'NX')) {
                 try {
                     $this->rehydrateStockFromDatabase($eventId, $key);
                 } finally {
@@ -39,8 +40,9 @@ class RedisStockManager implements StockManager
                 }
             } else {
                 // Retry up to 3 times waiting for the lock-holder to finish writing.
-                // If the key is still absent after all retries, forcefully rehydrate
-                // (the prior lock-holder likely died before writing).
+                // If the key is still absent afterwards, try to take the lock over —
+                // it succeeds only once the holder's lock has expired, i.e. when the
+                // holder died before writing.
                 $maxRetries = 3;
                 for ($attempt = 0; $attempt < $maxRetries; $attempt++) {
                     usleep(50_000); // 50ms
@@ -50,9 +52,8 @@ class RedisStockManager implements StockManager
                 }
 
                 if (Redis::get($key) === null) {
-                    // Lock-holder died; acquire lock ourselves and rehydrate
-                    // @phpstan-ignore-next-line (PHPStan cannot model Redis state changes between calls)
-                    if (Redis::set($lockKey, '1', ['nx', 'ex' => 5])) {
+                    // @phpstan-ignore-next-line (same facade signature gap, plus PHPStan cannot model Redis state changing between calls)
+                    if (Redis::set($lockKey, '1', 'EX', 5, 'NX')) {
                         try {
                             $this->rehydrateStockFromDatabase($eventId, $key);
                         } finally {
