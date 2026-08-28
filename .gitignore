@@ -27,3 +27,6 @@ Thumbs.db
 ARCHITECTURE.md
 context.md
 Agents.md
+
+# k6 stress-test bearer tokens (regenerate with db:seed --class=StressTestSeeder)
+tests/Load/k6/stress-tokens.json
