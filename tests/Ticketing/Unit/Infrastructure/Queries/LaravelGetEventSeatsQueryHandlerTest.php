@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Tests\Ticketing\Unit\Infrastructure\Queries;
 
 use Closure;
-use Mockery;
 use Illuminate\Cache\TaggedCache;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Collection;
+use Mockery;
 use Src\Ticketing\Application\Queries\GetEventSeatsQuery;
 use Src\Ticketing\Infrastructure\Queries\LaravelGetEventSeatsQueryHandler;
 use Tests\TestCase;
@@ -29,7 +29,7 @@ class LaravelGetEventSeatsQueryHandlerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->handler = new LaravelGetEventSeatsQueryHandler();
+        $this->handler = new LaravelGetEventSeatsQueryHandler;
     }
 
     public function test_it_writes_to_cache_with_correct_tags(): void
@@ -62,8 +62,8 @@ class LaravelGetEventSeatsQueryHandlerTest extends TestCase
 
     public function test_it_returns_cached_result_without_hitting_db(): void
     {
-        $query          = new GetEventSeatsQuery(eventId: 7, afterSeatId: 0, perPage: 100);
-        $cachedResult   = ['data' => [['id' => 1, 'row' => 'A']], 'next_cursor' => null];
+        $query = new GetEventSeatsQuery(eventId: 7, afterSeatId: 0, perPage: 100);
+        $cachedResult = ['data' => [['id' => 1, 'row' => 'A']], 'next_cursor' => null];
 
         $taggedCache = Mockery::mock(TaggedCache::class);
         // remember() returns cached value directly, never executing the closure

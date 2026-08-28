@@ -30,14 +30,14 @@ class ReservationCleanupTest extends TestCase
     public function test_cleanup_command_releases_expired_reservations(): void
     {
         // 1. Setup
-        $user  = User::factory()->create();
+        $user = User::factory()->create();
         $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
-        $seat  = SeatModel::create([
-            'event_id'            => $event->id,
-            'row'                 => 'A',
-            'number'              => 1,
-            'price_amount'        => 5000,
-            'price_currency'      => 'USD',
+        $seat = SeatModel::create([
+            'event_id' => $event->id,
+            'row' => 'A',
+            'number' => 1,
+            'price_amount' => 5000,
+            'price_currency' => 'USD',
             'reserved_by_user_id' => $user->id, // Locked
         ]);
 
@@ -47,16 +47,16 @@ class ReservationCleanupTest extends TestCase
         // Create EXPIRED reservation
         $reservationId = 'res_expired_123';
         DB::table('reservations')->insert([
-            'id'             => $reservationId,
-            'event_id'       => $event->id,
-            'seat_id'        => $seat->id,
-            'user_id'        => $user->id,
-            'status'         => ReservationStatus::PENDING_PAYMENT->value,
-            'price_amount'   => 5000,
+            'id' => $reservationId,
+            'event_id' => $event->id,
+            'seat_id' => $seat->id,
+            'user_id' => $user->id,
+            'status' => ReservationStatus::PENDING_PAYMENT->value,
+            'price_amount' => 5000,
             'price_currency' => 'USD',
-            'expires_at'     => now()->subMinutes(10), // Expired 10 min ago
-            'created_at'     => now()->subMinutes(20),
-            'updated_at'     => now()->subMinutes(20),
+            'expires_at' => now()->subMinutes(10), // Expired 10 min ago
+            'created_at' => now()->subMinutes(20),
+            'updated_at' => now()->subMinutes(20),
         ]);
 
         // 2. Run Command
@@ -76,13 +76,13 @@ class ReservationCleanupTest extends TestCase
 
         // Reservation should be cancelled
         $this->assertDatabaseHas('reservations', [
-            'id'     => $reservationId,
+            'id' => $reservationId,
             'status' => ReservationStatus::CANCELLED->value,
         ]);
 
         // Seat should be released
         $this->assertDatabaseHas('seats', [
-            'id'                  => $seat->id,
+            'id' => $seat->id,
             'reserved_by_user_id' => null,
         ]);
 
@@ -92,23 +92,23 @@ class ReservationCleanupTest extends TestCase
 
     public function test_cleanup_handles_multiple_expired_reservations(): void
     {
-        $user  = User::factory()->create();
+        $user = User::factory()->create();
         $event = EventModel::create(['name' => 'Festival', 'total_seats' => 100]);
 
         $seat1 = SeatModel::create([
-            'event_id'            => $event->id,
-            'row'                 => 'A',
-            'number'              => 1,
-            'price_amount'        => 5000,
-            'price_currency'      => 'USD',
+            'event_id' => $event->id,
+            'row' => 'A',
+            'number' => 1,
+            'price_amount' => 5000,
+            'price_currency' => 'USD',
             'reserved_by_user_id' => $user->id,
         ]);
         $seat2 = SeatModel::create([
-            'event_id'            => $event->id,
-            'row'                 => 'A',
-            'number'              => 2,
-            'price_amount'        => 5000,
-            'price_currency'      => 'USD',
+            'event_id' => $event->id,
+            'row' => 'A',
+            'number' => 2,
+            'price_amount' => 5000,
+            'price_currency' => 'USD',
             'reserved_by_user_id' => $user->id,
         ]);
 
@@ -119,16 +119,16 @@ class ReservationCleanupTest extends TestCase
 
         foreach ([$resId1 => $seat1->id, $resId2 => $seat2->id] as $resId => $seatId) {
             DB::table('reservations')->insert([
-                'id'             => $resId,
-                'event_id'       => $event->id,
-                'seat_id'        => $seatId,
-                'user_id'        => $user->id,
-                'status'         => ReservationStatus::PENDING_PAYMENT->value,
-                'price_amount'   => 5000,
+                'id' => $resId,
+                'event_id' => $event->id,
+                'seat_id' => $seatId,
+                'user_id' => $user->id,
+                'status' => ReservationStatus::PENDING_PAYMENT->value,
+                'price_amount' => 5000,
                 'price_currency' => 'USD',
-                'expires_at'     => now()->subMinutes(10),
-                'created_at'     => now()->subMinutes(20),
-                'updated_at'     => now()->subMinutes(20),
+                'expires_at' => now()->subMinutes(10),
+                'created_at' => now()->subMinutes(20),
+                'updated_at' => now()->subMinutes(20),
             ]);
         }
 
@@ -145,14 +145,14 @@ class ReservationCleanupTest extends TestCase
 
     public function test_cleanup_ignores_already_paid_reservations(): void
     {
-        $user  = User::factory()->create();
+        $user = User::factory()->create();
         $event = EventModel::create(['name' => 'Show', 'total_seats' => 50]);
-        $seat  = SeatModel::create([
-            'event_id'            => $event->id,
-            'row'                 => 'B',
-            'number'              => 5,
-            'price_amount'        => 3000,
-            'price_currency'      => 'USD',
+        $seat = SeatModel::create([
+            'event_id' => $event->id,
+            'row' => 'B',
+            'number' => 5,
+            'price_amount' => 3000,
+            'price_currency' => 'USD',
             'reserved_by_user_id' => $user->id,
         ]);
 
@@ -160,16 +160,16 @@ class ReservationCleanupTest extends TestCase
 
         $reservationId = 'res_paid_already';
         DB::table('reservations')->insert([
-            'id'             => $reservationId,
-            'event_id'       => $event->id,
-            'seat_id'        => $seat->id,
-            'user_id'        => $user->id,
-            'status'         => ReservationStatus::PAID->value, // ALREADY PAID
-            'price_amount'   => 3000,
+            'id' => $reservationId,
+            'event_id' => $event->id,
+            'seat_id' => $seat->id,
+            'user_id' => $user->id,
+            'status' => ReservationStatus::PAID->value, // ALREADY PAID
+            'price_amount' => 3000,
             'price_currency' => 'USD',
-            'expires_at'     => now()->subMinutes(10),
-            'created_at'     => now()->subMinutes(30),
-            'updated_at'     => now()->subMinutes(30),
+            'expires_at' => now()->subMinutes(10),
+            'created_at' => now()->subMinutes(30),
+            'updated_at' => now()->subMinutes(30),
         ]);
 
         /** @var \Illuminate\Testing\PendingCommand $commandIgnored */
@@ -180,7 +180,7 @@ class ReservationCleanupTest extends TestCase
 
         // PAID reservation should remain unchanged
         $this->assertDatabaseHas('reservations', [
-            'id'     => $reservationId,
+            'id' => $reservationId,
             'status' => ReservationStatus::PAID->value,
         ]);
         // Stock should NOT have been reverted

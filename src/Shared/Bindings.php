@@ -16,8 +16,8 @@ class Bindings extends ServiceProvider
     {
         $this->app->bind(AuditLogger::class, function () {
             return new CompositeAuditLogger(
-                new EloquentAuditLogger(),
-                new FileAuditLogger()
+                new EloquentAuditLogger,
+                new FileAuditLogger
             );
         });
     }

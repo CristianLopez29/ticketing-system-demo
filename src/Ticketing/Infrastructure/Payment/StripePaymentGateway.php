@@ -22,7 +22,7 @@ class StripePaymentGateway implements PaymentGateway
 
         try {
             // Connect to Stripe API...
-            $transactionId = 'stripe_txn_' . uniqid('', true);
+            $transactionId = 'stripe_txn_'.uniqid('', true);
 
             $this->circuitBreaker->recordSuccess();
 
@@ -31,7 +31,7 @@ class StripePaymentGateway implements PaymentGateway
             throw $e;
         } catch (Throwable $e) {
             $this->circuitBreaker->recordFailure();
-            throw new RuntimeException('Payment gateway charge failed: ' . $e->getMessage(), 0, $e);
+            throw new RuntimeException('Payment gateway charge failed: '.$e->getMessage(), 0, $e);
         }
     }
 
@@ -46,7 +46,7 @@ class StripePaymentGateway implements PaymentGateway
             throw $e;
         } catch (Throwable $e) {
             $this->circuitBreaker->recordFailure();
-            throw new RuntimeException('Payment gateway refund failed: ' . $e->getMessage(), 0, $e);
+            throw new RuntimeException('Payment gateway refund failed: '.$e->getMessage(), 0, $e);
         }
     }
 }

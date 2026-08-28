@@ -19,15 +19,15 @@ class EloquentReservationRepository implements ReservationRepository
         DB::table('reservations')->updateOrInsert(
             ['id' => $reservation->id()],
             [
-                'event_id'       => $reservation->eventId(),
-                'seat_id'        => $reservation->seatId()->value(),
-                'user_id'        => $reservation->userId(),
-                'status'         => $reservation->status()->value,
-                'price_amount'   => $reservation->price()->amount(),
+                'event_id' => $reservation->eventId(),
+                'seat_id' => $reservation->seatId()->value(),
+                'user_id' => $reservation->userId(),
+                'status' => $reservation->status()->value,
+                'price_amount' => $reservation->price()->amount(),
                 'price_currency' => $reservation->price()->currency(),
-                'expires_at'     => $reservation->expiresAt()->format(\DateTimeImmutable::ATOM),
-                'created_at'     => $reservation->createdAt()->format(\DateTimeImmutable::ATOM),
-                'updated_at'     => now(),
+                'expires_at' => $reservation->expiresAt()->format(\DateTimeImmutable::ATOM),
+                'created_at' => $reservation->createdAt()->format(\DateTimeImmutable::ATOM),
+                'updated_at' => now(),
             ]
         );
     }
@@ -89,10 +89,10 @@ class EloquentReservationRepository implements ReservationRepository
         if ($afterCreatedAt !== null && $afterId !== null) {
             $query->where(function ($q) use ($afterCreatedAt, $afterId) {
                 $q->where('created_at', '>', $afterCreatedAt)
-                  ->orWhere(function ($q2) use ($afterCreatedAt, $afterId) {
-                      $q2->where('created_at', '=', $afterCreatedAt)
-                         ->where('id', '>', $afterId);
-                  });
+                    ->orWhere(function ($q2) use ($afterCreatedAt, $afterId) {
+                        $q2->where('created_at', '=', $afterCreatedAt)
+                            ->where('id', '>', $afterId);
+                    });
             });
         }
 

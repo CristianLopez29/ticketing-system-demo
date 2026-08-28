@@ -10,7 +10,6 @@ use Src\Ticketing\Domain\Repositories\EventRepository;
 
 class EloquentEventRepository implements EventRepository
 {
-
     public function find(int $id): ?Event
     {
         $record = DB::table('events')->find($id);
@@ -33,7 +32,7 @@ class EloquentEventRepository implements EventRepository
 
         $events = [];
         foreach ($records as $record) {
-            $data     = (array) $record;
+            $data = (array) $record;
             $events[] = new Event(
                 (int) ($data['id'] ?? 0),
                 (string) ($data['name'] ?? ''),
@@ -50,17 +49,17 @@ class EloquentEventRepository implements EventRepository
 
         if ($isNew) {
             DB::table('events')->insert([
-                'id'          => $event->id(),
-                'name'        => $event->name(),
+                'id' => $event->id(),
+                'name' => $event->name(),
                 'total_seats' => $event->totalSeats(),
-                'created_at'  => now(),
-                'updated_at'  => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
         } else {
             DB::table('events')->where('id', $event->id())->update([
-                'name'        => $event->name(),
+                'name' => $event->name(),
                 'total_seats' => $event->totalSeats(),
-                'updated_at'  => now(),
+                'updated_at' => now(),
             ]);
         }
     }

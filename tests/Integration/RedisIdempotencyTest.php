@@ -30,9 +30,9 @@ class RedisIdempotencyTest extends TestCase
 
     public function test_cache_add_is_atomic_only_first_call_succeeds(): void
     {
-        $key = 'idempotency:test:' . uniqid('', true);
+        $key = 'idempotency:test:'.uniqid('', true);
 
-        $first  = Cache::add($key, 'processed', 60);
+        $first = Cache::add($key, 'processed', 60);
         $second = Cache::add($key, 'processed', 60);
 
         $this->assertTrue($first, 'First add() must return true (key did not exist)');
@@ -43,7 +43,7 @@ class RedisIdempotencyTest extends TestCase
 
     public function test_cache_add_returns_true_after_expiry(): void
     {
-        $key = 'idempotency:test:' . uniqid('', true);
+        $key = 'idempotency:test:'.uniqid('', true);
 
         $first = Cache::add($key, 'processed', 1); // 1-second TTL
         $this->assertTrue($first);

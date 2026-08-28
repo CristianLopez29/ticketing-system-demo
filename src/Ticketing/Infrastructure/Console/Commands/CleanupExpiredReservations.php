@@ -27,11 +27,11 @@ class CleanupExpiredReservations extends Command
         StockManager $stockManager,
         TransactionManager $transactionManager
     ): int {
-        $now            = new DateTimeImmutable();
-        $limit          = 100;
-        $total          = 0;
+        $now = new DateTimeImmutable;
+        $limit = 100;
+        $total = 0;
         $afterCreatedAt = null;
-        $afterId        = null;
+        $afterId = null;
 
         while (true) {
             $batch = $reservationRepository->findExpiredChunked($now, $limit, $afterCreatedAt, $afterId);
@@ -83,9 +83,9 @@ class CleanupExpiredReservations extends Command
 
             // Advance cursor to the last record of this batch
             /** @var Reservation $last */
-            $last           = end($batch);
+            $last = end($batch);
             $afterCreatedAt = $last->createdAt()->format(DateTimeImmutable::ATOM);
-            $afterId        = $last->id();
+            $afterId = $last->id();
         }
 
         if ($total === 0) {

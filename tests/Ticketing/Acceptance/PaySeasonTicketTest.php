@@ -22,9 +22,9 @@ class PaySeasonTicketTest extends TestCase
     private function createSeasonTicket(int $userId, string $status = 'pending_payment'): string
     {
         $seasonId = DB::table('seasons')->insertGetId([
-            'name'       => '2026 Season',
+            'name' => '2026 Season',
             'start_date' => '2026-01-01',
-            'end_date'   => '2026-12-31',
+            'end_date' => '2026-12-31',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -32,17 +32,17 @@ class PaySeasonTicketTest extends TestCase
         $id = (string) \Illuminate\Support\Str::uuid();
 
         DB::table('season_tickets')->insert([
-            'id'             => $id,
-            'season_id'      => $seasonId,
-            'user_id'        => $userId,
-            'row'            => 'A',
-            'number'         => 1,
-            'price_amount'   => 8000,
+            'id' => $id,
+            'season_id' => $seasonId,
+            'user_id' => $userId,
+            'row' => 'A',
+            'number' => 1,
+            'price_amount' => 8000,
             'price_currency' => 'EUR',
-            'status'         => $status,
-            'expires_at'     => now()->addMinutes(15),
-            'created_at'     => now(),
-            'updated_at'     => now(),
+            'status' => $status,
+            'expires_at' => now()->addMinutes(15),
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         return $id;
@@ -64,11 +64,11 @@ class PaySeasonTicketTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonFragment([
             'season_ticket_id' => $ticketId,
-            'status'           => ReservationStatus::PAID->value,
+            'status' => ReservationStatus::PAID->value,
         ]);
 
         $this->assertDatabaseHas('season_tickets', [
-            'id'     => $ticketId,
+            'id' => $ticketId,
             'status' => ReservationStatus::PAID->value,
         ]);
     }
@@ -76,7 +76,7 @@ class PaySeasonTicketTest extends TestCase
     public function test_another_user_cannot_pay_a_season_ticket_they_do_not_own(): void
     {
         // Arrange: owner creates ticket, but attacker acts
-        $owner   = User::factory()->create();
+        $owner = User::factory()->create();
         $attacker = User::factory()->create();
 
         $ticketId = $this->createSeasonTicket($owner->id);
@@ -94,14 +94,14 @@ class PaySeasonTicketTest extends TestCase
 
         // Ticket must remain in pending_payment
         $this->assertDatabaseHas('season_tickets', [
-            'id'     => $ticketId,
+            'id' => $ticketId,
             'status' => ReservationStatus::PENDING_PAYMENT->value,
         ]);
     }
 
     public function test_unauthenticated_user_cannot_pay_a_season_ticket(): void
     {
-        $owner    = User::factory()->create();
+        $owner = User::factory()->create();
         $ticketId = $this->createSeasonTicket($owner->id);
 
         // No Sanctum::actingAs — unauthenticated request

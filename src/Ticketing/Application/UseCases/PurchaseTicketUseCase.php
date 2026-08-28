@@ -16,7 +16,6 @@ use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Src\Ticketing\Domain\Model\Reservation;
 use Src\Ticketing\Domain\Repositories\ReservationRepository;
 use Src\Ticketing\Domain\Repositories\SeatRepository;
-use Src\Ticketing\Domain\ValueObjects\SeatId;
 
 class PurchaseTicketUseCase
 {

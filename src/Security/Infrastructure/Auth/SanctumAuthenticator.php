@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Src\Security\Infrastructure\Auth;
 
-use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use Src\Security\Domain\Ports\Authenticator;
 
 class SanctumAuthenticator implements Authenticator

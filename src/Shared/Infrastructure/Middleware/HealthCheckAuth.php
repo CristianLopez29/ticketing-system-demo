@@ -13,8 +13,8 @@ class HealthCheckAuth
     public function handle(Request $request, Closure $next): Response
     {
         $token = config('ticketing.healthcheck_token');
-        
-        if (!$token || $request->bearerToken() !== $token) {
+
+        if (! $token || $request->bearerToken() !== $token) {
             return response()->json(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
         }
 

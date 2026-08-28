@@ -28,11 +28,11 @@ class LaravelGetEventSeatsQueryHandler implements GetEventSeatsQueryHandler
                     ->limit($query->perPage)
                     ->get()
                     ->map(fn ($seat) => [
-                        'id'     => $seat->id,
-                        'row'    => $seat->row,
+                        'id' => $seat->id,
+                        'row' => $seat->row,
                         'number' => $seat->number,
-                        'price'  => [
-                            'amount'   => $seat->price_amount,
+                        'price' => [
+                            'amount' => $seat->price_amount,
                             'currency' => $seat->price_currency,
                         ],
                         'status' => $seat->reserved_by_user_id ? 'sold' : 'available',
@@ -44,7 +44,7 @@ class LaravelGetEventSeatsQueryHandler implements GetEventSeatsQueryHandler
                     : null;
 
                 return [
-                    'data'        => $seats,
+                    'data' => $seats,
                     'next_cursor' => $nextCursor,
                 ];
             });

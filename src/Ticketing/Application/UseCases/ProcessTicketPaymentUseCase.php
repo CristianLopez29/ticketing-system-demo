@@ -52,8 +52,8 @@ class ProcessTicketPaymentUseCase
         } catch (Throwable $e) {
             $this->logger->warning('Payment gateway charge failed', [
                 'reservation_id' => $reservationId,
-                'user_id'        => $reservation->userId(),
-                'error'          => $e->getMessage(),
+                'user_id' => $reservation->userId(),
+                'error' => $e->getMessage(),
             ]);
 
             throw $e;
@@ -83,7 +83,7 @@ class ProcessTicketPaymentUseCase
         } catch (Throwable $e) {
             $this->logger->error('Payment processing failed after charge', [
                 'reservation_id' => $reservationId,
-                'error'          => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             $this->compensate($reservationId, $transactionId, $e, $reservation);
@@ -131,13 +131,13 @@ class ProcessTicketPaymentUseCase
                 $this->logger->error('Failed to refund after DB failure', [
                     'transaction_id' => $transactionId,
                     'reservation_id' => $reservationId,
-                    'error'          => $refundException->getMessage(),
+                    'error' => $refundException->getMessage(),
                 ]);
 
                 $this->pendingRefundRepository->save(
                     $transactionId,
                     $reservationId,
-                    'Failed to refund during saga compensation: ' . $refundException->getMessage()
+                    'Failed to refund during saga compensation: '.$refundException->getMessage()
                 );
             }
         }
@@ -151,7 +151,7 @@ class ProcessTicketPaymentUseCase
         } catch (Throwable $notifyError) {
             $this->logger->warning('Failed to notify user of payment failure', [
                 'reservation_id' => $reservationId,
-                'error'          => $notifyError->getMessage(),
+                'error' => $notifyError->getMessage(),
             ]);
         }
     }

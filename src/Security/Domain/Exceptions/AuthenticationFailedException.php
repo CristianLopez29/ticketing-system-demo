@@ -6,6 +6,4 @@ namespace Src\Security\Domain\Exceptions;
 
 use RuntimeException;
 
-class AuthenticationFailedException extends RuntimeException
-{
-}
+class AuthenticationFailedException extends RuntimeException {}

@@ -81,7 +81,8 @@ class RedisStockManager implements StockManager
         Redis::set("event:{$eventId}:stock", $stock);
     }
 
-    private function rehydrateStockFromDatabase(int $eventId, string $key): void    {
+    private function rehydrateStockFromDatabase(int $eventId, string $key): void
+    {
         $availableSeats = $this->seatRepository->countAvailableForEvent($eventId);
 
         // SET NX (only set if not exists) to avoid overwriting a concurrent re-hydration

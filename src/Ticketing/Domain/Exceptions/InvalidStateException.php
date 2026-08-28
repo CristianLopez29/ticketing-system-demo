@@ -6,6 +6,4 @@ namespace Src\Ticketing\Domain\Exceptions;
 
 use RuntimeException;
 
-class InvalidStateException extends RuntimeException
-{
-}
+class InvalidStateException extends RuntimeException {}

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Tests\Ticketing\Integration\Jobs;
 
 use App\Models\User;
@@ -76,13 +75,16 @@ class ProcessTicketPaymentSagaTest extends TestCase
         // Let's use a mock for PaymentGateway to delete the reservation during the charge method
         // But wait, charge is called, then DB transaction. We can just delete the reservation manually by mocking PaymentGateway's charge to call parent::charge and also delete reservation.
 
-        $gateway = new class(shouldFailRefund: true) extends FakePaymentGateway {
+        $gateway = new class(shouldFailRefund: true) extends FakePaymentGateway
+        {
             public string $resId = '';
+
             public function charge(int $userId, \Src\Ticketing\Domain\ValueObjects\Money $amount): string
             {
                 $id = parent::charge($userId, $amount);
                 // Introduce inconsistency: Delete reservation so transactionManager throws exception
                 DB::table('reservations')->where('id', $this->resId)->delete();
+
                 return $id;
             }
         };
@@ -93,8 +95,7 @@ class ProcessTicketPaymentSagaTest extends TestCase
         try {
             app()->call([$job, 'handle']);
             $this->fail('Expected an exception to be thrown, but none was.');
-        }
-        catch (\Exception) {
+        } catch (\Exception) {
             // Exception is expected — continue to assertions below
         }
 

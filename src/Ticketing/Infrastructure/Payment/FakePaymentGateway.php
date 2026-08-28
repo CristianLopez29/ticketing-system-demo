@@ -10,11 +10,12 @@ use Src\Ticketing\Domain\ValueObjects\Money;
 class FakePaymentGateway implements PaymentGateway
 {
     private bool $shouldFail;
+
     private bool $shouldFailRefund;
 
     /**
-     * @param bool $shouldFail        Force the next charge() to fail (preferred for test setup via constructor)
-     * @param bool $shouldFailRefund  Force the next refund() to fail
+     * @param  bool  $shouldFail  Force the next charge() to fail (preferred for test setup via constructor)
+     * @param  bool  $shouldFailRefund  Force the next refund() to fail
      */
     public function __construct(
         bool $shouldFail = false,
@@ -47,7 +48,7 @@ class FakePaymentGateway implements PaymentGateway
             throw new \RuntimeException('Payment declined by the bank.');
         }
 
-        return 'fake_txn_' . uniqid('', true);
+        return 'fake_txn_'.uniqid('', true);
     }
 
     public function refund(string $transactionId): void

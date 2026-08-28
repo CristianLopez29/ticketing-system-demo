@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Tests\Ticketing\Integration\Jobs;
 
 use App\Models\User;

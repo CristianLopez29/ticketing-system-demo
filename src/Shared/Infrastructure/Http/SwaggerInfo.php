@@ -9,6 +9,7 @@ namespace Src\Shared\Infrastructure\Http;
  *     version="1.0.0",
  *     title="Ticketing System API",
  *     description="REST API for the Ticketing System — single-event ticket purchases, season ticket reservations, event management, and health probes.\n\n**Authentication:** All protected endpoints require a Bearer token obtained via `POST /api/login`. Pass it as `Authorization: Bearer {token}`.\n\n**Idempotency:** Purchase endpoints require an `Idempotency-Key` header (UUID recommended) to prevent duplicate charges on retries.",
+ *
  *     @OA\Contact(name="Ticketing Team", email="admin@example.com")
  * )
  *

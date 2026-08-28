@@ -476,7 +476,7 @@ class PurchaseSeasonTicketTest extends TestCase
                 'reserved_by_user_id' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]
+            ],
         ]);
 
         Redis::set("event:{$event1Id}:stock", 100);

@@ -15,7 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
 Route::get('/health', function (): JsonResponse {
     return new JsonResponse([
         'status' => 'ok',
-        'time'   => now()->toISOString(),
+        'time' => now()->toISOString(),
     ], Response::HTTP_OK);
 });
 
@@ -42,6 +42,6 @@ Route::get('/readiness', function (): JsonResponse {
     return new JsonResponse([
         'status' => $status,
         'checks' => $checks,
-        'time'   => now()->toISOString(),
+        'time' => now()->toISOString(),
     ], Response::HTTP_OK);
 });
