@@ -1,0 +1,116 @@
+# Production stack. Run with:
+#   docker compose -f compose.prod.yaml up -d --build
+#
+# compose.yaml (Sail) is the local development runtime and is NOT used here.
+#
+# The project name namespaces every container, volume and default network, so this stack
+# coexists with the other apps on the host without colliding on names.
+name: ticketing
+
+services:
+    app:
+        build:
+            context: .
+            dockerfile: docker/production/Dockerfile
+        image: ticketing/app:latest
+        restart: unless-stopped
+        env_file: .env
+        volumes:
+            - 'ticketing-storage:/var/www/html/storage'
+        networks:
+            - internal
+        depends_on:
+            mysql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+
+    web:
+        build:
+            context: .
+            dockerfile: docker/production/Dockerfile
+            target: web
+        image: ticketing/web:latest
+        restart: unless-stopped
+        # Deliberately no published ports: the only way in is the shared reverse proxy.
+        # That is what makes TRUSTED_PROXIES=* safe — nothing can reach this container
+        # directly to forge an X-Forwarded-For header.
+        networks:
+            - internal
+            - proxy
+        depends_on:
+            - app
+
+    worker:
+        image: ticketing/app:latest
+        restart: unless-stopped
+        env_file: .env
+        # Required: payment is a saga. With no worker, reservations never become tickets.
+        command: ['php', 'artisan', 'queue:work', '--tries=3', '--max-time=3600', '--sleep=1']
+        volumes:
+            - 'ticketing-storage:/var/www/html/storage'
+        networks:
+            - internal
+        depends_on:
+            - app
+
+    scheduler:
+        image: ticketing/app:latest
+        restart: unless-stopped
+        env_file: .env
+        # Required: releases seats whose reservation expired.
+        command: ['php', 'artisan', 'schedule:work']
+        volumes:
+            - 'ticketing-storage:/var/www/html/storage'
+        networks:
+            - internal
+        depends_on:
+            - app
+
+    mysql:
+        image: 'mysql/mysql-server:8.0'
+        restart: unless-stopped
+        environment:
+            MYSQL_ROOT_PASSWORD: '${DB_ROOT_PASSWORD}'
+            MYSQL_DATABASE: '${DB_DATABASE}'
+            MYSQL_USER: '${DB_USERNAME}'
+            MYSQL_PASSWORD: '${DB_PASSWORD}'
+        volumes:
+            - 'ticketing-mysql:/var/lib/mysql'
+        networks:
+            - internal
+        healthcheck:
+            test: ['CMD', 'mysqladmin', 'ping', '-p${DB_PASSWORD}']
+            interval: 10s
+            retries: 5
+            timeout: 5s
+
+    redis:
+        image: 'redis:7-alpine'
+        restart: unless-stopped
+        command: ['redis-server', '--requirepass', '${REDIS_PASSWORD}', '--appendonly', 'yes']
+        volumes:
+            - 'ticketing-redis:/data'
+        networks:
+            - internal
+        healthcheck:
+            test: ['CMD', 'redis-cli', '--no-auth-warning', '-a', '${REDIS_PASSWORD}', 'ping']
+            interval: 10s
+            retries: 5
+            timeout: 5s
+
+networks:
+    internal:
+        driver: bridge
+    # Shared with the reverse proxy and the other apps on this host.
+    # Create it once:  docker network create proxy
+    proxy:
+        external: true
+
+volumes:
+    ticketing-mysql:
+        driver: local
+    ticketing-redis:
+        driver: local
+    ticketing-storage:
+        driver: local
