@@ -163,6 +163,36 @@ class PurchaseTicketTest extends TestCase
         $response->assertStatus(202);
     }
 
+    public function test_rejects_a_purchase_without_an_idempotency_key(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
+        $seat = SeatModel::create([
+            'event_id' => $event->id,
+            'row' => 'A',
+            'number' => 1,
+            'price_amount' => 5000,
+            'price_currency' => 'USD',
+            'reserved_by_user_id' => null,
+        ]);
+
+        $response = $this->postJson('/api/tickets/purchase', [
+            'event_id' => $event->id,
+            'seat_id' => $seat->id,
+        ]);
+
+        $response->assertStatus(400)
+            ->assertJsonFragment(['error' => 'Idempotency-Key header is required.']);
+
+        // The request never reached the use case, so no seat may be held.
+        $this->assertDatabaseHas('seats', [
+            'id' => $seat->id,
+            'reserved_by_user_id' => null,
+        ]);
+    }
+
     public function test_rejects_invalid_idempotency_key_format(): void
     {
         $user = User::factory()->create();
