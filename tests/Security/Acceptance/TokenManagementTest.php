@@ -61,4 +61,15 @@ class TokenManagementTest extends TestCase
 
         $this->assertEquals(0, PersonalAccessToken::where('tokenable_id', $target->id)->count());
     }
+
+    #[Test]
+    public function revoking_tokens_of_an_unknown_user_returns_not_found(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin, 'sanctum')
+            ->postJson('/api/users/404404/tokens/revoke-all')
+            ->assertStatus(404)
+            ->assertJson(['message' => 'User not found']);
+    }
 }
