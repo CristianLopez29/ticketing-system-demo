@@ -8,7 +8,13 @@ use App\Models\User;
 use DateTimeImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
+use Src\Ticketing\Domain\Events\ReservationCancelled;
+use Src\Ticketing\Domain\Events\ReservationPaid;
+use Src\Ticketing\Domain\Model\Reservation;
+use Src\Ticketing\Domain\ValueObjects\Money;
+use Src\Ticketing\Domain\ValueObjects\SeatId;
 use Src\Ticketing\Infrastructure\Persistence\EloquentReservationRepository;
 use Src\Ticketing\Infrastructure\Persistence\EventModel;
 use Src\Ticketing\Infrastructure\Persistence\SeatModel;
@@ -214,5 +220,57 @@ class EloquentReservationRepositoryTest extends TestCase
         $this->assertSame(ReservationStatus::PENDING_PAYMENT, $reservation->status());
         $this->assertSame(1000, $reservation->price()->amount());
         $this->assertSame('EUR', $reservation->price()->currency());
+    }
+
+    public function test_it_dispatches_the_reservation_paid_event_on_save(): void
+    {
+        Event::fake([ReservationPaid::class]);
+
+        $seat = SeatModel::create([
+            'event_id' => $this->eventId,
+            'row' => 'A',
+            'number' => rand(1, 9999),
+            'price_amount' => 1000,
+            'price_currency' => 'EUR',
+        ]);
+
+        $reservation = Reservation::create(
+            $this->eventId,
+            new SeatId($seat->id),
+            $this->userId,
+            new Money(1000, 'EUR'),
+            'res-paid'
+        );
+        $reservation->markAsPaid();
+
+        $this->repository->save($reservation);
+
+        Event::assertDispatched(ReservationPaid::class, fn ($event) => $event->reservationId === 'res-paid');
+    }
+
+    public function test_it_dispatches_the_reservation_cancelled_event_on_save(): void
+    {
+        Event::fake([ReservationCancelled::class]);
+
+        $seat = SeatModel::create([
+            'event_id' => $this->eventId,
+            'row' => 'A',
+            'number' => rand(1, 9999),
+            'price_amount' => 1000,
+            'price_currency' => 'EUR',
+        ]);
+
+        $reservation = Reservation::create(
+            $this->eventId,
+            new SeatId($seat->id),
+            $this->userId,
+            new Money(1000, 'EUR'),
+            'res-cancelled'
+        );
+        $reservation->cancel();
+
+        $this->repository->save($reservation);
+
+        Event::assertDispatched(ReservationCancelled::class, fn ($event) => $event->reservationId === 'res-cancelled');
     }
 }

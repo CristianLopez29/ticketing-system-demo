@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace Tests\Ticketing\Integration\Persistence;
 
 use App\Models\User;
+use DateTimeImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
+use Src\Ticketing\Domain\Events\SeasonTicketPaid;
 use Src\Ticketing\Domain\Model\SeasonTicket;
+use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Infrastructure\Persistence\EloquentSeasonTicketRepository;
 use Tests\TestCase;
 
@@ -145,6 +149,28 @@ class EloquentSeasonTicketRepositoryTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+    }
+
+    public function test_it_dispatches_the_season_ticket_paid_event_on_save(): void
+    {
+        Event::fake([SeasonTicketPaid::class]);
+
+        $seasonTicket = new SeasonTicket(
+            'st-paid',
+            $this->seasonId,
+            $this->userId,
+            'A',
+            1,
+            new Money(1000, 'EUR'),
+            ReservationStatus::PENDING_PAYMENT,
+            null,
+            new DateTimeImmutable
+        );
+        $seasonTicket->pay();
+
+        $this->repository->save($seasonTicket);
+
+        Event::assertDispatched(SeasonTicketPaid::class, fn ($event) => $event->seasonTicketId === 'st-paid');
     }
 
     private function createSeason(): int
