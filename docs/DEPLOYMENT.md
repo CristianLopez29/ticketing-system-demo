@@ -87,8 +87,7 @@ $EDITOR .env          # fill every <placeholder>
 Generate the secrets rather than inventing them:
 
 ```bash
-docker run --rm php:8.4-cli php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'   # HEALTHCHECK_TOKEN
-openssl rand -base64 32                                                        # DB / Redis passwords
+openssl rand -base64 32   # DB / Redis passwords
 ```
 
 ### Environment variables that must be set
