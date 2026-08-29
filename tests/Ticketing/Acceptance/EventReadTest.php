@@ -79,6 +79,36 @@ class EventReadTest extends TestCase
         $this->assertNull($json['next_cursor']);
     }
 
+    public function test_it_returns_a_cursor_when_the_page_is_full(): void
+    {
+        $event = EventModel::create(['name' => 'Concert', 'total_seats' => 2]);
+
+        $first = SeatModel::create([
+            'event_id' => $event->id,
+            'row' => 'A',
+            'number' => 1,
+            'price_amount' => 5000,
+            'price_currency' => 'USD',
+            'reserved_by_user_id' => null,
+        ]);
+        SeatModel::create([
+            'event_id' => $event->id,
+            'row' => 'A',
+            'number' => 2,
+            'price_amount' => 5000,
+            'price_currency' => 'USD',
+            'reserved_by_user_id' => null,
+        ]);
+
+        $json = $this->getJson("/api/events/{$event->id}/seats?per_page=1")
+            ->assertStatus(200)
+            ->json();
+
+        $this->assertIsArray($json);
+        $this->assertCount(1, (array) ($json['data'] ?? []));
+        $this->assertSame($first->id, $json['next_cursor'] ?? null);
+    }
+
     public function test_can_fetch_event_stats(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
