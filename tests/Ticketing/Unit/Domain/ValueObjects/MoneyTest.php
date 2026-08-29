@@ -100,4 +100,52 @@ class MoneyTest extends TestCase
 
         $this->assertEquals(85, $result->amount());
     }
+
+    public function test_it_requires_a_three_letter_currency_code(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        new Money(1000, 'DOLLAR');
+    }
+
+    public function test_it_cannot_subtract_different_currencies(): void
+    {
+        $money = new Money(1000, 'USD');
+        $other = new Money(500, 'EUR');
+
+        $this->expectException(InvalidArgumentException::class);
+        $money->subtract($other);
+    }
+
+    public function test_it_cannot_subtract_into_a_negative_amount(): void
+    {
+        $money = new Money(500, 'USD');
+        $other = new Money(1000, 'USD');
+
+        $this->expectException(InvalidArgumentException::class);
+        $money->subtract($other);
+    }
+
+    public function test_it_cannot_multiply_by_a_negative_multiplier(): void
+    {
+        $money = new Money(1000, 'USD');
+
+        $this->expectException(InvalidArgumentException::class);
+        $money->multiply(-1.5);
+    }
+
+    public function test_it_rejects_a_discount_percent_below_zero(): void
+    {
+        $money = new Money(1000, 'USD');
+
+        $this->expectException(InvalidArgumentException::class);
+        $money->applyDiscountPercent(-1);
+    }
+
+    public function test_it_rejects_a_discount_percent_above_one_hundred(): void
+    {
+        $money = new Money(1000, 'USD');
+
+        $this->expectException(InvalidArgumentException::class);
+        $money->applyDiscountPercent(101);
+    }
 }
