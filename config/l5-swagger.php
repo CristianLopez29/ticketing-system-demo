@@ -1,7 +1,8 @@
 <?php
 
-$swaggerProtected = env('L5_SWAGGER_PROTECT', env('APP_ENV') !== 'local');
-$swaggerMiddleware = $swaggerProtected ? ['auth:sanctum', 'role:admin'] : [];
+// DocsBasicAuth decides for itself whether to challenge, from config/security.php.
+// SwaggerUiCsp is what makes the UI render at all under the global CSP.
+$swaggerMiddleware = ['docs.auth', \Src\Shared\Infrastructure\Middleware\SwaggerUiCsp::class];
 
 return [
     'default' => 'default',

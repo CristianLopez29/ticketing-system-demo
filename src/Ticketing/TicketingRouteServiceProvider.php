@@ -15,7 +15,9 @@ class TicketingRouteServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        Route::middleware('api')
+        // Laravel 11+ dropped throttle from the default "api" group: an unauthenticated
+        // endpoint has no limit at all unless one is declared here.
+        Route::middleware(['api', 'throttle:60,1'])
             ->prefix('api')
             ->group(function () {
                 Route::get('/events/{id}/seats', [EventController::class, 'getSeats']);

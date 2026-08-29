@@ -84,9 +84,10 @@ class PurchaseTicketController
             ], Response::HTTP_BAD_REQUEST);
         }
 
+        // min:1 mirrors the SeatId value object, which rejects non-positive ids.
         $validated = $request->validate([
-            'event_id' => 'required|integer',
-            'seat_id' => 'required|integer',
+            'event_id' => 'required|integer|min:1',
+            'seat_id' => 'required|integer|min:1',
         ]);
 
         $user = $request->user();

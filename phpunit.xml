@@ -14,6 +14,9 @@
         <testsuite name="Reports">
             <directory>tests/Reports</directory>
         </testsuite>
+        <testsuite name="Shared">
+            <directory>tests/Shared</directory>
+        </testsuite>
         <testsuite name="Integration">
             <directory>tests/Integration</directory>
         </testsuite>

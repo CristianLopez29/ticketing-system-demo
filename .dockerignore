@@ -1,0 +1,37 @@
+# Secrets must never be baked into an image: the .env is mounted at run time.
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Dependencies are installed inside the image, and bootstrap/cache holds the *host's*
+# package manifest — copying it in makes the build reference dev-only providers.
+/vendor
+/bootstrap/cache/*.php
+/node_modules
+
+.git
+.github
+.claude
+.trae
+.remember
+.phpunit.result.cache
+/.phpunit.cache
+
+# Runtime state belongs to the volume, not the image.
+/storage/logs/*
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/app/public/*
+
+# Not needed at run time.
+/tests
+/docs
+compose.yaml
+compose.prod.yaml
+phpunit.xml
+phpstan.neon
+README.md
+CLAUDE.md
+context.md

@@ -32,7 +32,7 @@ class PurchaseSeasonTicketController
      *             @OA\Property(property="season_id",       type="integer", example=1,            description="ID of the season"),
      *             @OA\Property(property="row",             type="string",  example="A",          description="Seat row identifier"),
      *             @OA\Property(property="number",          type="integer", example=12,           description="Seat number within the row"),
-     *             @OA\Property(property="idempotency_key", type="string",  example="uuid-12345", description="Unique key to prevent duplicate reservations (UUID recommended)")
+     *             @OA\Property(property="idempotency_key", type="string",  format="uuid", example="550e8400-e29b-41d4-a716-446655440000", description="Unique client-generated UUID v4 preventing duplicate reservations")
      *         )
      *     ),
      *
@@ -67,11 +67,13 @@ class PurchaseSeasonTicketController
      */
     public function __invoke(Request $request): JsonResponse
     {
+        // The key becomes a Redis key: unvalidated it let a client seed the keyspace with
+        // arbitrary strings. Matches the UUID v4 contract PurchaseTicketController enforces.
         $validated = $request->validate([
-            'season_id' => 'required|integer',
-            'row' => 'required|string',
-            'number' => 'required|integer',
-            'idempotency_key' => 'required|string',
+            'season_id' => 'required|integer|min:1',
+            'row' => 'required|string|max:16',
+            'number' => 'required|integer|min:1',
+            'idempotency_key' => 'required|string|uuid:4',
         ]);
 
         $user = $request->user();

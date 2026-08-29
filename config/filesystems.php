@@ -33,7 +33,9 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Nothing in this app issues temporary URLs, and 'serve' publishes a
+            // GET and a PUT route under /storage for a disk no request should reach.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

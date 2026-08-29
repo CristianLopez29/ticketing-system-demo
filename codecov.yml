@@ -1,0 +1,29 @@
+# Codecov configuration.
+#
+# Every status is informational: Codecov reports the number and the diff on each pull
+# request but never posts a failing check. Coverage is a signal here, not a gate — the
+# gates that block a merge are the test suite, PHPStan level 9, Pint and composer audit.
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...90"
+
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+comment:
+  layout: "reach, diff, files"
+  require_changes: true
+
+ignore:
+  - "tests/**"
+  - "database/**"
+  - "bootstrap/**"
+  - "config/**"
+  - "public/**"

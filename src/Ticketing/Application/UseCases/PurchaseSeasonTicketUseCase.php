@@ -13,6 +13,7 @@ use Src\Ticketing\Application\Ports\IdempotencyStore;
 use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Application\Ports\TransactionManager;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
+use Src\Ticketing\Domain\Exceptions\EventSoldOutException;
 use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Src\Ticketing\Domain\Model\SeasonTicket;
 use Src\Ticketing\Domain\Repositories\EventRepository;
@@ -69,7 +70,7 @@ class PurchaseSeasonTicketUseCase
                 if ($this->stockManager->attemptToReserve($event->id())) {
                     $reservedStockEventIds[] = $event->id();
                 } else {
-                    throw new RuntimeException("Event {$event->id()} is completely sold out.");
+                    throw new EventSoldOutException("Event {$event->id()} is completely sold out.");
                 }
             }
 

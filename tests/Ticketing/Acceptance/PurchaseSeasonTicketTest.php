@@ -86,7 +86,7 @@ class PurchaseSeasonTicketTest extends TestCase
             'season_id' => $seasonId,
             'row' => 'A',
             'number' => 1,
-            'idempotency_key' => 'uuid-12345',
+            'idempotency_key' => '11111111-1111-4111-8111-111111111111',
         ]);
 
         // 3. Assert
@@ -183,7 +183,7 @@ class PurchaseSeasonTicketTest extends TestCase
             'season_id' => $seasonId,
             'row' => 'A',
             'number' => 1,
-            'idempotency_key' => 'uuid-failure',
+            'idempotency_key' => '22222222-2222-4222-8222-222222222222',
         ]);
 
         if ($response->status() !== 409) {
@@ -281,7 +281,7 @@ class PurchaseSeasonTicketTest extends TestCase
             'season_id' => $seasonId,
             'row' => 'A',
             'number' => 1,
-            'idempotency_key' => 'uuid-renewal-fail',
+            'idempotency_key' => '33333333-3333-4333-8333-333333333333',
         ]);
 
         // 3. Assert
@@ -359,7 +359,7 @@ class PurchaseSeasonTicketTest extends TestCase
             'season_id' => $seasonId,
             'row' => 'A',
             'number' => 1,
-            'idempotency_key' => 'uuid-renewal-success',
+            'idempotency_key' => '44444444-4444-4444-8444-444444444444',
         ]);
 
         if ($response->status() !== 201) {
@@ -434,7 +434,7 @@ class PurchaseSeasonTicketTest extends TestCase
             'season_id' => $seasonId,
             'row' => 'A',
             'number' => 1,
-            'idempotency_key' => 'uuid-currency-fail',
+            'idempotency_key' => '55555555-5555-4555-8555-555555555555',
         ]);
 
         $response->assertStatus(400); // InvalidArgumentException → 400 BAD_REQUEST
@@ -486,7 +486,7 @@ class PurchaseSeasonTicketTest extends TestCase
             'season_id' => $seasonId,
             'row' => 'A',
             'number' => 1,
-            'idempotency_key' => 'uuid-idempotency-test',
+            'idempotency_key' => '66666666-6666-4666-8666-666666666666',
         ])->assertStatus(201);
 
         // Second attempt with exact same key
@@ -494,7 +494,7 @@ class PurchaseSeasonTicketTest extends TestCase
             'season_id' => $seasonId,
             'row' => 'A',
             'number' => 1,
-            'idempotency_key' => 'uuid-idempotency-test',
+            'idempotency_key' => '66666666-6666-4666-8666-666666666666',
         ]);
 
         $response->assertStatus(201);
