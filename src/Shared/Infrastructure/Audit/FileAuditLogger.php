@@ -12,7 +12,7 @@ class FileAuditLogger implements AuditLogger
     /** @param array<string, mixed> $payload */
     public function log(string $action, string $entityType, string $entityId, ?string $actorId = null, array $payload = []): void
     {
-        Log::info($action, [
+        Log::channel('audit')->info($action, [
             'entity_type' => $entityType,
             'entity_id' => $entityId,
             'actor_id' => $actorId,

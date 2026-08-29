@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
+use Src\Shared\Domain\Audit\AuditLogger;
 use Src\Shared\Domain\Services\UuidGenerator;
 use Src\Shared\Infrastructure\Services\PhpUuidGenerator;
 use Src\Ticketing\Application\Ports\AsyncDispatcher;
@@ -19,6 +20,9 @@ use Src\Ticketing\Application\Queries\GetEventSeatsQueryHandler;
 use Src\Ticketing\Application\Queries\GetEventStatsQueryHandler;
 use Src\Ticketing\Application\UseCases\ProcessTicketPaymentUseCase;
 use Src\Ticketing\Application\UseCases\PurchaseSeasonTicketUseCase;
+use Src\Ticketing\Domain\Events\ReservationCancelled;
+use Src\Ticketing\Domain\Events\ReservationPaid;
+use Src\Ticketing\Domain\Events\SeasonTicketPaid;
 use Src\Ticketing\Domain\Events\TicketSold;
 use Src\Ticketing\Domain\Ports\PaymentGateway;
 use Src\Ticketing\Domain\Repositories\EventRepository;
@@ -31,6 +35,10 @@ use Src\Ticketing\Domain\Repositories\TicketRepository;
 use Src\Ticketing\Infrastructure\Console\Commands\CleanupExpiredReservations;
 use Src\Ticketing\Infrastructure\Jobs\LaravelAsyncDispatcher;
 use Src\Ticketing\Infrastructure\Listeners\InvalidateSeatsCacheOnTicketSold;
+use Src\Ticketing\Infrastructure\Listeners\RecordAuditLogOnReservationCancelled;
+use Src\Ticketing\Infrastructure\Listeners\RecordAuditLogOnReservationPaid;
+use Src\Ticketing\Infrastructure\Listeners\RecordAuditLogOnSeasonTicketPaid;
+use Src\Ticketing\Infrastructure\Listeners\RecordAuditLogOnTicketSold;
 use Src\Ticketing\Infrastructure\Notifications\LogUserNotifier;
 use Src\Ticketing\Infrastructure\Payment\FakePaymentGateway;
 use Src\Ticketing\Infrastructure\Payment\RedisCircuitBreaker;
@@ -90,6 +98,7 @@ class Bindings extends ServiceProvider
                 $app->make(TransactionManager::class),
                 $app->make(PendingRefundRepository::class),
                 $app->make(LoggerInterface::class),
+                $app->make(AuditLogger::class),
             );
         });
 
@@ -126,6 +135,10 @@ class Bindings extends ServiceProvider
     public function boot(): void
     {
         Event::listen(TicketSold::class, InvalidateSeatsCacheOnTicketSold::class);
+        Event::listen(TicketSold::class, RecordAuditLogOnTicketSold::class);
+        Event::listen(ReservationPaid::class, RecordAuditLogOnReservationPaid::class);
+        Event::listen(ReservationCancelled::class, RecordAuditLogOnReservationCancelled::class);
+        Event::listen(SeasonTicketPaid::class, RecordAuditLogOnSeasonTicketPaid::class);
 
         if ($this->app->runningInConsole()) {
             $this->commands([

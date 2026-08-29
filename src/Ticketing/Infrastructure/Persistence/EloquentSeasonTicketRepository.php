@@ -6,6 +6,7 @@ namespace Src\Ticketing\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event as LaravelEvent;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
 use Src\Ticketing\Domain\Model\SeasonTicket;
 use Src\Ticketing\Domain\Repositories\SeasonTicketRepository;
@@ -30,6 +31,10 @@ class EloquentSeasonTicketRepository implements SeasonTicketRepository
                 'updated_at' => now(),
             ]
         );
+
+        foreach ($seasonTicket->pullDomainEvents() as $domainEvent) {
+            LaravelEvent::dispatch($domainEvent);
+        }
     }
 
     public function find(string $id): ?SeasonTicket

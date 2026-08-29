@@ -88,6 +88,45 @@ class ReservationCleanupTest extends TestCase
         $this->assertEquals(100, Redis::get("event:{$event->id}:stock"));
     }
 
+    public function test_cleanup_records_an_audit_log_entry_per_expired_reservation(): void
+    {
+        $user = User::factory()->create();
+        $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
+        $seat = SeatModel::create([
+            'event_id' => $event->id,
+            'row' => 'A',
+            'number' => 1,
+            'price_amount' => 5000,
+            'price_currency' => 'USD',
+            'reserved_by_user_id' => $user->id,
+        ]);
+
+        Redis::set("event:{$event->id}:stock", 99);
+
+        $reservationId = 'res_expired_audit';
+        DB::table('reservations')->insert([
+            'id' => $reservationId,
+            'event_id' => $event->id,
+            'seat_id' => $seat->id,
+            'user_id' => $user->id,
+            'status' => ReservationStatus::PENDING_PAYMENT->value,
+            'price_amount' => 5000,
+            'price_currency' => 'USD',
+            'expires_at' => now()->subMinutes(10),
+            'created_at' => now()->subMinutes(20),
+            'updated_at' => now()->subMinutes(20),
+        ]);
+
+        $this->artisan('ticketing:cleanup-expired-reservations')->run();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'reservation.expired',
+            'entity_type' => 'reservation',
+            'entity_id' => $reservationId,
+            'actor_id' => 'scheduler',
+        ]);
+    }
+
     public function test_cleanup_handles_multiple_expired_reservations(): void
     {
         $user = User::factory()->create();
