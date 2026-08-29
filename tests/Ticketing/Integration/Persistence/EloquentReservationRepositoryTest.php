@@ -190,4 +190,29 @@ class EloquentReservationRepositoryTest extends TestCase
 
         $this->assertSame([], $batch);
     }
+
+    public function test_it_returns_null_when_the_reservation_does_not_exist(): void
+    {
+        $this->assertNull($this->repository->find('res-unknown'));
+    }
+
+    public function test_it_maps_a_stored_reservation(): void
+    {
+        $this->insertReservation(
+            'res-1',
+            ReservationStatus::PENDING_PAYMENT->value,
+            now()->addHour()->toIso8601String(),
+            now()->toIso8601String()
+        );
+
+        $reservation = $this->repository->find('res-1');
+
+        $this->assertNotNull($reservation);
+        $this->assertSame('res-1', $reservation->id());
+        $this->assertSame($this->eventId, $reservation->eventId());
+        $this->assertSame($this->userId, $reservation->userId());
+        $this->assertSame(ReservationStatus::PENDING_PAYMENT, $reservation->status());
+        $this->assertSame(1000, $reservation->price()->amount());
+        $this->assertSame('EUR', $reservation->price()->currency());
+    }
 }
