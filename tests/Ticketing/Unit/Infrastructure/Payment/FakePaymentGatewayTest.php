@@ -43,4 +43,21 @@ class FakePaymentGatewayTest extends TestCase
         $transactionId = $gateway->charge(1, new Money(100, 'USD'));
         $this->assertStringStartsWith('fake_txn_', $transactionId);
     }
+
+    public function test_it_refunds_silently_by_default(): void
+    {
+        (new FakePaymentGateway)->refund('fake_txn_1');
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function test_it_can_be_forced_to_fail_the_refund(): void
+    {
+        $gateway = (new FakePaymentGateway)->forceFailNextRefund();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Refund declined by the bank.');
+
+        $gateway->refund('fake_txn_1');
+    }
 }
