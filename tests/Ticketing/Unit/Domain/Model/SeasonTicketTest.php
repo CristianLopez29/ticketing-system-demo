@@ -57,4 +57,26 @@ class SeasonTicketTest extends TestCase
 
         $this->assertEquals(ReservationStatus::CANCELLED, $ticket->status());
     }
+
+    public function test_it_cannot_be_cancelled_once_paid(): void
+    {
+        $ticket = $this->createSeasonTicket();
+        $ticket->pay();
+
+        $this->expectException(InvalidStateException::class);
+        $this->expectExceptionMessage('Cannot cancel a paid season ticket.');
+
+        $ticket->cancel();
+    }
+
+    public function test_it_cannot_be_cancelled_twice(): void
+    {
+        $ticket = $this->createSeasonTicket();
+        $ticket->cancel();
+
+        $this->expectException(InvalidStateException::class);
+        $this->expectExceptionMessage('Season ticket is already cancelled.');
+
+        $ticket->cancel();
+    }
 }

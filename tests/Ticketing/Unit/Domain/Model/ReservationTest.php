@@ -83,4 +83,26 @@ class ReservationTest extends TestCase
 
         $reservation->cancel();
     }
+
+    public function test_it_cannot_be_cancelled_twice(): void
+    {
+        $reservation = $this->createReservation();
+        $reservation->cancel();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Reservation is already cancelled.');
+
+        $reservation->cancel();
+    }
+
+    public function test_it_cannot_be_paid_once_cancelled(): void
+    {
+        $reservation = $this->createReservation();
+        $reservation->cancel();
+
+        $this->expectException(InvalidStateException::class);
+        $this->expectExceptionMessage('Cannot pay for a reservation that is not pending.');
+
+        $reservation->markAsPaid();
+    }
 }
