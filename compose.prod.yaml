@@ -24,6 +24,16 @@ services:
                 condition: service_healthy
             redis:
                 condition: service_healthy
+        deploy:
+            resources:
+                limits:
+                    # Must stay above PHP's own ceiling: opcache reserves 128M once, and
+                    # each of php-fpm's 5 default children may reach memory_limit=256M
+                    # (docker/production/php.ini). If the cgroup fills first the kernel
+                    # kills the whole pool, including whichever worker is inside
+                    # TransactionManager::run() holding a row lock. PHP hitting its own
+                    # limit instead fails one request and rolls that transaction back.
+                    memory: 640M
 
     web:
         build:
@@ -32,14 +42,32 @@ services:
             target: web
         image: ticketing/web:latest
         restart: unless-stopped
-        # Deliberately no published ports: the only way in is the shared reverse proxy.
+        # Deliberately no published ports: the only way in is the shared Traefik proxy.
         # That is what makes TRUSTED_PROXIES=* safe — nothing can reach this container
         # directly to forge an X-Forwarded-For header.
         networks:
             - internal
-            - proxy
+            - edge
+        # Traefik is configured with exposedbydefault=false, so a container is routed only
+        # if it opts in here. The router name must stay unique
+        # across every app on the box: two routers called `ticketing` collide silently.
+        # `traefik.docker.network` is required because this container sits on two
+        # networks and Traefik would otherwise pick the wrong address.
+        labels:
+            traefik.enable: 'true'
+            traefik.docker.network: edge
+            traefik.http.routers.ticketing.rule: Host(`${APP_DOMAIN}`)
+            traefik.http.routers.ticketing.entrypoints: websecure
+            traefik.http.routers.ticketing.tls.certresolver: letsencrypt
+            traefik.http.services.ticketing.loadbalancer.server.port: '80'
         depends_on:
             - app
+        deploy:
+            resources:
+                limits:
+                    # Nginx itself needs ~20M; the rest is the 10m limit_req zone plus one
+                    # worker process per host core.
+                    memory: 128M
 
     worker:
         image: ticketing/app:latest
@@ -53,6 +81,13 @@ services:
             - internal
         depends_on:
             - app
+        deploy:
+            resources:
+                limits:
+                    # Above memory_limit=256M for the same reason as `app`: an OOM kill
+                    # mid-job loses the charge attempt with no compensation, while PHP's
+                    # own limit throws and `--tries=3` retries it.
+                    memory: 384M
 
     scheduler:
         image: ticketing/app:latest
@@ -66,10 +101,22 @@ services:
             - internal
         depends_on:
             - app
+        deploy:
+            resources:
+                limits:
+                    # schedule:work forks `schedule:run` every minute, so the limit has to
+                    # cover the supervisor plus one child that may reach memory_limit.
+                    memory: 384M
 
     mysql:
         image: 'mysql/mysql-server:8.0'
         restart: unless-stopped
+        # Pinned rather than left to the 128M default: the working set here is small
+        # (events, seats, reservations, tickets) and fits entirely in 192M, which keeps
+        # the FOR UPDATE index lookups off disk while contended. A memory limit without
+        # this is a loaded gun — the pool would size itself against the host's RAM, not
+        # the cgroup's, and get OOM-killed mid-transaction.
+        command: ['mysqld', '--innodb-buffer-pool-size=192M']
         environment:
             MYSQL_ROOT_PASSWORD: '${DB_ROOT_PASSWORD}'
             MYSQL_DATABASE: '${DB_DATABASE}'
@@ -84,11 +131,36 @@ services:
             interval: 10s
             retries: 5
             timeout: 5s
+        deploy:
+            resources:
+                limits:
+                    # Buffer pool plus MySQL 8's ~400M baseline, most of which is
+                    # performance_schema. Deliberately not disabled: lock waits and
+                    # deadlocks are this project's failure mode and that is where they
+                    # are visible.
+                    memory: 768M
 
     redis:
         image: 'redis:7-alpine'
         restart: unless-stopped
-        command: ['redis-server', '--requirepass', '${REDIS_PASSWORD}', '--appendonly', 'yes']
+        # noeviction, never allkeys-lru: this Redis is not only a cache. It holds the
+        # queue (evicting a job silently loses a payment), the idempotency keys (evicting
+        # one re-opens the duplicate-purchase window) and the stock counters. Refusing
+        # writes surfaces as an exception the purchase flow already compensates for;
+        # eviction is silent corruption. 128mb is far above the real working set, so
+        # hitting it means a leak worth investigating, not normal growth.
+        command:
+            [
+                'redis-server',
+                '--requirepass',
+                '${REDIS_PASSWORD}',
+                '--appendonly',
+                'yes',
+                '--maxmemory',
+                '128mb',
+                '--maxmemory-policy',
+                'noeviction',
+            ]
         volumes:
             - 'ticketing-redis:/data'
         networks:
@@ -98,13 +170,21 @@ services:
             interval: 10s
             retries: 5
             timeout: 5s
+        deploy:
+            resources:
+                limits:
+                    # 2x maxmemory: an AOF rewrite forks, and copy-on-write can briefly
+                    # double the resident set.
+                    memory: 256M
 
 networks:
     internal:
         driver: bridge
-    # Shared with the reverse proxy and the other apps on this host.
-    # Create it once:  docker network create proxy
-    proxy:
+    # Shared with Traefik and the other apps on this host. Traefik is started once from
+    # its own directory (/srv/traefik) and is configured with
+    # --providers.docker.network=edge, so the name is not ours to choose.
+    # Create it once:  docker network create edge
+    edge:
         external: true
 
 volumes:
