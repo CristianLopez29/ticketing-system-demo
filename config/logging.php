@@ -100,6 +100,19 @@ return [
             'formatter' => JsonFormatter::class,
         ],
 
+        /*
+         | Audit trail, separate from both the application and access logs: this is what
+         | compliance/forensics reads, so it needs its own retention and must never be
+         | pruned by an unrelated LOG_*_DAYS change.
+         */
+        'audit' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/audit.log'),
+            'level' => 'info',
+            'days' => env('AUDIT_LOG_DAYS', 90),
+            'formatter' => JsonFormatter::class,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

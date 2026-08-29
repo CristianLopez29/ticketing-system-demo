@@ -13,6 +13,7 @@ use Src\Security\Application\UseCases\LoginUseCase;
 use Src\Security\Domain\Ports\Authenticator;
 use Src\Security\Infrastructure\Auth\SanctumAuthenticator;
 use Src\Security\Infrastructure\Controllers\AuthController;
+use Src\Shared\Domain\Audit\AuditLogger;
 
 class Bindings extends ServiceProvider
 {
@@ -20,7 +21,7 @@ class Bindings extends ServiceProvider
     {
         $this->app->bind(Authenticator::class, SanctumAuthenticator::class);
         $this->app->bind(LoginUseCase::class, function ($app) {
-            return new LoginUseCase($app->make(Authenticator::class));
+            return new LoginUseCase($app->make(Authenticator::class), $app->make(AuditLogger::class));
         });
     }
 
