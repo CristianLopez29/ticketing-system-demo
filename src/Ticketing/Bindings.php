@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
+use Src\Shared\Domain\Audit\AuditLogger;
 use Src\Shared\Domain\Services\UuidGenerator;
 use Src\Shared\Infrastructure\Services\PhpUuidGenerator;
 use Src\Ticketing\Application\Ports\AsyncDispatcher;
@@ -97,6 +98,7 @@ class Bindings extends ServiceProvider
                 $app->make(TransactionManager::class),
                 $app->make(PendingRefundRepository::class),
                 $app->make(LoggerInterface::class),
+                $app->make(AuditLogger::class),
             );
         });
 

@@ -12,6 +12,9 @@ use Mockery\MockInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Src\Shared\Domain\Audit\AuditAction;
+use Src\Shared\Domain\Audit\AuditActor;
+use Src\Shared\Domain\Audit\AuditLogger;
 use Src\Shared\Domain\Services\UuidGenerator;
 use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Application\Ports\TransactionManager;
@@ -65,6 +68,8 @@ class ProcessTicketPaymentUseCaseTest extends TestCase
 
     private LoggerInterface&MockInterface $logger;
 
+    private AuditLogger&MockInterface $auditLogger;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -78,6 +83,7 @@ class ProcessTicketPaymentUseCaseTest extends TestCase
         $this->transactionManager = Mockery::mock(TransactionManager::class);
         $this->pendingRefundRepository = Mockery::mock(PendingRefundRepository::class);
         $this->logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
+        $this->auditLogger = Mockery::mock(AuditLogger::class)->shouldIgnoreMissing();
 
         $this->uuidGenerator = Mockery::mock(UuidGenerator::class);
         $this->uuidGenerator->shouldReceive('generate')->andReturn('ticket-1');
@@ -232,6 +238,74 @@ class ProcessTicketPaymentUseCaseTest extends TestCase
         $this->useCase()->execute(self::RESERVATION_ID);
     }
 
+    public function test_it_audits_the_saga_compensation(): void
+    {
+        $this->arrangeFailedCommit($this->reservation(), $this->reservation());
+        $this->seatRepository->shouldReceive('findAndLock')->once()->andReturn($this->seatReservedBy(self::USER_ID));
+        $this->seatRepository->shouldReceive('save')->once();
+        $this->stockManager->shouldReceive('revertReservation')->once();
+        $this->paymentGateway->shouldReceive('refund')->once()->with(self::TRANSACTION_ID);
+        $this->userNotifier->shouldReceive('notifyPaymentFailed')->once();
+
+        $this->auditLogger
+            ->shouldReceive('log')
+            ->once()
+            ->with(
+                AuditAction::PaymentCompensated->value,
+                'reservation',
+                self::RESERVATION_ID,
+                AuditActor::System->value,
+                ['transaction_id' => self::TRANSACTION_ID]
+            );
+
+        $this->expectException(RuntimeException::class);
+
+        $this->useCase()->execute(self::RESERVATION_ID);
+    }
+
+    public function test_it_does_not_audit_a_compensation_that_never_ran(): void
+    {
+        // The cleanup command got there first: there is nothing to compensate.
+        $this->arrangeFailedCommit($this->reservation(), $this->reservation(ReservationStatus::CANCELLED));
+        $this->paymentGateway->shouldReceive('refund')->once();
+        $this->userNotifier->shouldReceive('notifyPaymentFailed')->once();
+
+        $this->auditLogger->shouldNotReceive('log')->with(AuditAction::PaymentCompensated->value, Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any());
+
+        $this->expectException(RuntimeException::class);
+
+        $this->useCase()->execute(self::RESERVATION_ID);
+    }
+
+    public function test_it_audits_a_refund_left_pending(): void
+    {
+        $this->arrangeFailedCommit($this->reservation(), $this->reservation());
+        $this->seatRepository->shouldReceive('findAndLock')->once()->andReturn($this->seatReservedBy(self::USER_ID));
+        $this->seatRepository->shouldReceive('save')->once();
+        $this->stockManager->shouldReceive('revertReservation')->once();
+        $this->paymentGateway
+            ->shouldReceive('refund')
+            ->once()
+            ->andThrow(new RuntimeException('Refund declined by the bank.'));
+        $this->userNotifier->shouldReceive('notifyPaymentFailed')->once();
+        $this->pendingRefundRepository->shouldReceive('save')->once();
+
+        $this->auditLogger
+            ->shouldReceive('log')
+            ->once()
+            ->with(
+                AuditAction::RefundPending->value,
+                'pending_refund',
+                self::TRANSACTION_ID,
+                AuditActor::System->value,
+                ['reservation_id' => self::RESERVATION_ID]
+            );
+
+        $this->expectException(RuntimeException::class);
+
+        $this->useCase()->execute(self::RESERVATION_ID);
+    }
+
     public function test_it_swallows_a_notifier_failure_so_the_compensation_still_completes(): void
     {
         $this->arrangeFailedCommit($this->reservation(), $this->reservation());
@@ -298,7 +372,8 @@ class ProcessTicketPaymentUseCaseTest extends TestCase
             $this->uuidGenerator,
             $this->transactionManager,
             $this->pendingRefundRepository,
-            $this->logger
+            $this->logger,
+            $this->auditLogger
         );
     }
 

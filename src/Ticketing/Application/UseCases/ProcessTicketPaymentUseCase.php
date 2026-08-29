@@ -6,6 +6,9 @@ namespace Src\Ticketing\Application\UseCases;
 
 use Exception;
 use Psr\Log\LoggerInterface;
+use Src\Shared\Domain\Audit\AuditAction;
+use Src\Shared\Domain\Audit\AuditActor;
+use Src\Shared\Domain\Audit\AuditLogger;
 use Src\Shared\Domain\Services\UuidGenerator;
 use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Application\Ports\TransactionManager;
@@ -32,7 +35,8 @@ class ProcessTicketPaymentUseCase
         private readonly UuidGenerator $uuidGenerator,
         private readonly TransactionManager $transactionManager,
         private readonly PendingRefundRepository $pendingRefundRepository,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly AuditLogger $auditLogger
     ) {}
 
     public function execute(string $reservationId): void
@@ -101,15 +105,15 @@ class ProcessTicketPaymentUseCase
         Throwable $originalError,
         Reservation $reservation
     ): void {
-        $this->transactionManager->run(function () use ($reservationId) {
+        $didCompensate = $this->transactionManager->run(function () use ($reservationId) {
             $lockedReservation = $this->reservationRepository->findAndLock($reservationId);
 
             if (! $lockedReservation) {
-                return;
+                return false;
             }
 
             if ($lockedReservation->status() !== ReservationStatus::PENDING_PAYMENT) {
-                return;
+                return false;
             }
 
             $lockedReservation->cancel();
@@ -122,7 +126,19 @@ class ProcessTicketPaymentUseCase
             }
 
             $this->stockManager->revertReservation($lockedReservation->eventId());
+
+            return true;
         });
+
+        if ($didCompensate) {
+            $this->auditLogger->log(
+                AuditAction::PaymentCompensated->value,
+                'reservation',
+                $reservationId,
+                AuditActor::System->value,
+                ['transaction_id' => $transactionId]
+            );
+        }
 
         if ($transactionId !== null) {
             try {
@@ -138,6 +154,14 @@ class ProcessTicketPaymentUseCase
                     $transactionId,
                     $reservationId,
                     'Failed to refund during saga compensation: '.$refundException->getMessage()
+                );
+
+                $this->auditLogger->log(
+                    AuditAction::RefundPending->value,
+                    'pending_refund',
+                    $transactionId,
+                    AuditActor::System->value,
+                    ['reservation_id' => $reservationId]
                 );
             }
         }

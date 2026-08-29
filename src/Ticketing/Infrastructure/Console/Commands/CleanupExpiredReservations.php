@@ -7,6 +7,9 @@ namespace Src\Ticketing\Infrastructure\Console\Commands;
 use DateTimeImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Src\Shared\Domain\Audit\AuditAction;
+use Src\Shared\Domain\Audit\AuditActor;
+use Src\Shared\Domain\Audit\AuditLogger;
 use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Application\Ports\TransactionManager;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
@@ -25,7 +28,8 @@ class CleanupExpiredReservations extends Command
         ReservationRepository $reservationRepository,
         SeatRepository $ticketRepository,
         StockManager $stockManager,
-        TransactionManager $transactionManager
+        TransactionManager $transactionManager,
+        AuditLogger $auditLogger
     ): int {
         $now = new DateTimeImmutable;
         $limit = 100;
@@ -74,6 +78,14 @@ class CleanupExpiredReservations extends Command
                     if ($didCleanup) {
                         $total++;
                         $this->info("Cleaned up reservation: {$reservation->id()}");
+
+                        $auditLogger->log(
+                            AuditAction::ReservationExpired->value,
+                            'reservation',
+                            $reservation->id(),
+                            AuditActor::Scheduler->value,
+                            ['event_id' => $reservation->eventId()]
+                        );
                     }
                 } catch (Throwable $e) {
                     $this->error("Failed to cleanup reservation {$reservation->id()}: {$e->getMessage()}");
