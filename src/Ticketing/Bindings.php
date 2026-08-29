@@ -12,7 +12,6 @@ use Src\Shared\Domain\Services\UuidGenerator;
 use Src\Shared\Infrastructure\Services\PhpUuidGenerator;
 use Src\Ticketing\Application\Ports\AsyncDispatcher;
 use Src\Ticketing\Application\Ports\IdempotencyStore;
-use Src\Ticketing\Application\Ports\ReadModelCache;
 use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Application\Ports\TransactionManager;
 use Src\Ticketing\Application\Ports\UserNotifier;
@@ -29,7 +28,6 @@ use Src\Ticketing\Domain\Repositories\SeasonRepository;
 use Src\Ticketing\Domain\Repositories\SeasonTicketRepository;
 use Src\Ticketing\Domain\Repositories\SeatRepository;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
-use Src\Ticketing\Infrastructure\Cache\LaravelReadModelCache;
 use Src\Ticketing\Infrastructure\Console\Commands\CleanupExpiredReservations;
 use Src\Ticketing\Infrastructure\Jobs\LaravelAsyncDispatcher;
 use Src\Ticketing\Infrastructure\Listeners\InvalidateSeatsCacheOnTicketSold;
@@ -68,7 +66,6 @@ class Bindings extends ServiceProvider
         $this->app->bind(UserNotifier::class, LogUserNotifier::class);
         $this->app->bind(GetEventSeatsQueryHandler::class, LaravelGetEventSeatsQueryHandler::class);
         $this->app->bind(GetEventStatsQueryHandler::class, LaravelGetEventStatsQueryHandler::class);
-        $this->app->bind(ReadModelCache::class, LaravelReadModelCache::class);
         $this->app->bind(PendingRefundRepository::class, EloquentPendingRefundRepository::class);
 
         $this->app->bind(\Psr\Clock\ClockInterface::class, function () {
