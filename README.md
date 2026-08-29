@@ -310,7 +310,7 @@ There is no frontend: this is a JSON API, with no `package.json` and no build st
 | POST | `/api/users/{id}/tokens/revoke-all` | Revoke all user tokens |
 
 The health probes are deliberately unauthenticated so orchestrators can call them; restrict
-them at the reverse proxy if you need to — see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+them at Traefik if you need to — see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 Rate limiting lives in two places on purpose. The application throttles express business
 limits (per user, per email) that a web server cannot know about; the Nginx `limit_req` zone in
@@ -444,6 +444,12 @@ SELECT COUNT(*) FROM failed_jobs;                                  -- must be 0
 A `500` in the k6 output means an unhandled deadlock. Treat it as a bug in the concurrency
 contract, not as load noise.
 
+**This runs locally, never against a deployed stack.** `StressTestSeeder` truncates every
+ticketing table and creates 1,000 accounts sharing one password, so it refuses to run outside
+`local` and `testing`. Behind the shared Traefik proxy the run would also be capped by the
+edge rate limiter, measuring the proxy rather than this application. See
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
 ---
 
 ## Deployment
@@ -453,12 +459,14 @@ Full procedure: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
 The production stack is [`compose.prod.yaml`](compose.prod.yaml) plus
 [`docker/production/`](docker/production/) — PHP-FPM 8.4, Nginx, a queue worker and a
 scheduler, with MySQL and Redis private to the stack. It publishes **no ports**: the only way
-in is a shared reverse proxy on a shared Docker network, so the host can run other
-applications alongside it.
+in is the shared Traefik proxy on the host's `edge` network, so the box can run other
+applications alongside it. Traefik itself is deployed once per host, outside this repo, and
+routes here off the `traefik.*` labels on the `web` service.
 
 ```bash
-cp .env.production.example .env      # fill every <placeholder>
-docker network create proxy || true
+cp .env.production.example .env      # fill every <placeholder>, APP_DOMAIN included
+docker network ls | grep edge        # created once per host, with Traefik
+# point the APP_DOMAIN A record at the VPS before this line — TLS is issued on first request
 docker compose -f compose.prod.yaml up -d --build
 docker compose -f compose.prod.yaml exec app php artisan key:generate --force
 docker compose -f compose.prod.yaml exec app php artisan migrate --force
