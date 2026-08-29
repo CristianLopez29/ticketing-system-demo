@@ -6,9 +6,11 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redis;
+use RuntimeException;
 
 class StressTestSeeder extends Seeder
 {
@@ -27,6 +29,8 @@ class StressTestSeeder extends Seeder
 
     public function run(): void
     {
+        $this->guardAgainstDeployedEnvironment();
+
         $this->resetTicketingState();
 
         $eventId = $this->seedSoldOutScenario();
@@ -34,6 +38,25 @@ class StressTestSeeder extends Seeder
 
         $this->command->info("Seeded event {$eventId} with ".self::SEAT_COUNT.' seats, Redis stock and '.$tokenCount.' buyer tokens.');
         $this->command->info('Tokens written to '.self::TOKEN_FILE);
+    }
+
+    /**
+     * This seeder truncates every ticketing table and plants 1,000 accounts sharing a
+     * single known password. `database/seeders/` is PSR-4 autoloaded, so it ships inside
+     * the production image, and `db:seed --force` skips Laravel's own confirmation
+     * prompt — which leaves this the only barrier between a mistyped command and every
+     * sale ever recorded. Load testing belongs on a local or throwaway stack.
+     */
+    private function guardAgainstDeployedEnvironment(): void
+    {
+        if (App::environment(['local', 'testing'])) {
+            return;
+        }
+
+        throw new RuntimeException(
+            'StressTestSeeder truncates the ticketing tables and refuses to run in "'
+            .App::environment().'". Run the k6 scenario against a local stack instead.'
+        );
     }
 
     private function resetTicketingState(): void

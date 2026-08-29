@@ -172,13 +172,27 @@ URLs are recovered from `X-Forwarded-Proto`, which is exactly what `TRUSTED_PROX
 The application limits cannot be expressed in Nginx — it knows nothing about users or emails —
 and the Nginx limit cannot be expressed in the application, which runs too late to help.
 
-**`flood-guard` applies to the k6 stress test too.** It is attached to the `websecure`
-entrypoint, so every router inherits it. A run against `https://$APP_DOMAIN` collects `429`s
-from Traefik as soon as it passes 50 r/s, which is neither the `409`/`422` the test expects
-nor a statement about this application. Run the load test against the `web` container over
-`edge`, or give the `ticketing` router an empty `...routers.ticketing.middlewares=` override
-for the duration of the run. A `429` from the edge is not evidence about the concurrency
-contract.
+### The k6 load test does not run against a deployed stack
+
+Not "prefer not to" — it cannot produce a valid result there, and the setup step is
+destructive:
+
+- **`StressTestSeeder` truncates `seats`, `events`, `reservations`, `tickets`,
+  `pending_refunds`, `jobs` and `failed_jobs`**, then creates 1,000 accounts sharing the
+  password `password` and writes 1,000 valid bearer tokens to a file. Against a deployed
+  database that is the irreversible loss of every sale, not a slow afternoon.
+- **The numbers would be meaningless anyway.** `flood-guard` is attached to Traefik's
+  `websecure` entrypoint, so every router inherits it: past 50 r/s the run collects `429`s
+  from the edge, which is neither the `202` nor the `409`/`422` the thresholds are written
+  against. It would be measuring Traefik.
+
+The seeder therefore refuses to run outside `local` and `testing`
+([`StressTestSeeder::guardAgainstDeployedEnvironment()`](../database/seeders/StressTestSeeder.php)),
+`.dockerignore` keeps `/tests` — the k6 script and any generated `stress-tokens.json` — out
+of the production image, and the load-test procedure lives in
+[README](../README.md#load-testing-with-k6) against the local Sail stack. Do not add a
+Traefik middleware override to "make the run work" on the VPS; the middleware is not the
+problem.
 
 ### Restricting the health probes
 

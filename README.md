@@ -444,6 +444,12 @@ SELECT COUNT(*) FROM failed_jobs;                                  -- must be 0
 A `500` in the k6 output means an unhandled deadlock. Treat it as a bug in the concurrency
 contract, not as load noise.
 
+**This runs locally, never against a deployed stack.** `StressTestSeeder` truncates every
+ticketing table and creates 1,000 accounts sharing one password, so it refuses to run outside
+`local` and `testing`. Behind the shared Traefik proxy the run would also be capped by the
+edge rate limiter, measuring the proxy rather than this application. See
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
 ---
 
 ## Deployment
