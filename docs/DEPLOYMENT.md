@@ -274,7 +274,7 @@ files. A client reporting an error only has to quote it.
 cd /srv/ticketing
 git pull
 
-docker compose -f compose.prod.yaml build
+docker compose -f compose.prod.yaml build --pull     # re-fetch base images, never reuse a stale cached layer
 docker compose -f compose.prod.yaml exec app php artisan down
 docker compose -f compose.prod.yaml up -d            # recreates app, web, worker, scheduler
 docker compose -f compose.prod.yaml exec app php artisan migrate --force
