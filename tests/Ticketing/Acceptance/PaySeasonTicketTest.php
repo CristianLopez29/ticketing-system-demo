@@ -7,6 +7,7 @@ namespace Tests\Ticketing\Acceptance;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
 use Tests\TestCase;
@@ -29,7 +30,7 @@ class PaySeasonTicketTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $id = (string) \Illuminate\Support\Str::uuid();
+        $id = (string) Str::uuid();
 
         DB::table('season_tickets')->insert([
             'id' => $id,

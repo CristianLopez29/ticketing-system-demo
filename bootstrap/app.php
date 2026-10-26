@@ -103,7 +103,7 @@ return Application::configure(basePath: dirname(__DIR__))
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
         });
 
-        $exceptions->render(function (\InvalidArgumentException $e, Request $request) {
+        $exceptions->render(function (InvalidArgumentException $e, Request $request) {
             if (! $request->expectsJson()) {
                 return null;
             }
@@ -111,7 +111,7 @@ return Application::configure(basePath: dirname(__DIR__))
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         });
 
-        $exceptions->render(function (\RuntimeException $e, Request $request) {
+        $exceptions->render(function (RuntimeException $e, Request $request) {
             if (! $request->expectsJson()) {
                 return null;
             }

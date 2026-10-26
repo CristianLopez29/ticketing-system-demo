@@ -26,8 +26,8 @@ class EloquentReservationRepository implements ReservationRepository
                 'status' => $reservation->status()->value,
                 'price_amount' => $reservation->price()->amount(),
                 'price_currency' => $reservation->price()->currency(),
-                'expires_at' => $reservation->expiresAt()->format(\DateTimeImmutable::ATOM),
-                'created_at' => $reservation->createdAt()->format(\DateTimeImmutable::ATOM),
+                'expires_at' => $reservation->expiresAt()->format(DateTimeImmutable::ATOM),
+                'created_at' => $reservation->createdAt()->format(DateTimeImmutable::ATOM),
                 'updated_at' => now(),
             ]
         );
@@ -85,7 +85,7 @@ class EloquentReservationRepository implements ReservationRepository
     ): array {
         $query = DB::table('reservations')
             ->where('status', ReservationStatus::PENDING_PAYMENT->value)
-            ->where('expires_at', '<=', $now->format(\DateTimeImmutable::ATOM))
+            ->where('expires_at', '<=', $now->format(DateTimeImmutable::ATOM))
             ->orderBy('created_at')
             ->orderBy('id')
             ->limit($limit);

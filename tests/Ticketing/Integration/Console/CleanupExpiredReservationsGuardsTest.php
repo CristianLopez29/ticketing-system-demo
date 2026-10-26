@@ -7,6 +7,7 @@ namespace Tests\Ticketing\Integration\Console;
 use Closure;
 use DateTimeImmutable;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Testing\PendingCommand;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
@@ -117,7 +118,7 @@ class CleanupExpiredReservationsGuardsTest extends TestCase
             ->andReturnUsing(fn (Closure $callback) => $callback());
     }
 
-    private function artisanCleanup(): \Illuminate\Testing\PendingCommand
+    private function artisanCleanup(): PendingCommand
     {
         $pending = $this->artisan('ticketing:cleanup-expired-reservations');
 

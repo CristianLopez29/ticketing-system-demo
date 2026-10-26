@@ -4,6 +4,7 @@ namespace Tests\Ticketing\Unit\Domain;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use Src\Ticketing\Domain\Exceptions\InvalidStateException;
 use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Src\Ticketing\Domain\Model\Seat;
 use Src\Ticketing\Domain\ValueObjects\Money;
@@ -79,7 +80,7 @@ class SeatTest extends TestCase
         $seat = $this->createValidSeat();
         $this->assertTrue($seat->isAvailable());
 
-        $this->expectException(\Src\Ticketing\Domain\Exceptions\InvalidStateException::class);
+        $this->expectException(InvalidStateException::class);
         $this->expectExceptionMessage('Seat A-10 is not reserved.');
 
         $seat->release();

@@ -169,7 +169,7 @@ class ReservationCleanupTest extends TestCase
             ]);
         }
 
-        /** @var \Illuminate\Testing\PendingCommand $command */
+        /** @var PendingCommand $command */
         $command = $this->artisan('ticketing:cleanup-expired-reservations');
         $command->assertExitCode(0)->run();
 
@@ -209,7 +209,7 @@ class ReservationCleanupTest extends TestCase
             'updated_at' => now()->subMinutes(30),
         ]);
 
-        /** @var \Illuminate\Testing\PendingCommand $commandIgnored */
+        /** @var PendingCommand $commandIgnored */
         $commandIgnored = $this->artisan('ticketing:cleanup-expired-reservations');
         $commandIgnored->expectsOutput('No expired reservations found.')
             ->assertExitCode(0)

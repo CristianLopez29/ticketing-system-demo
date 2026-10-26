@@ -12,6 +12,7 @@ use Src\Ticketing\Application\Ports\AsyncDispatcher;
 use Src\Ticketing\Application\Ports\IdempotencyStore;
 use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Application\Ports\TransactionManager;
+use Src\Ticketing\Domain\Exceptions\DuplicateRequestException;
 use Src\Ticketing\Domain\Exceptions\EventSoldOutException;
 use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Src\Ticketing\Domain\Model\Reservation;
@@ -38,7 +39,7 @@ class PurchaseTicketUseCase
             if ($previousResult !== null) {
                 return $previousResult;
             }
-            throw new \Src\Ticketing\Domain\Exceptions\DuplicateRequestException('This request has already been processed.');
+            throw new DuplicateRequestException('This request has already been processed.');
         }
 
         try {

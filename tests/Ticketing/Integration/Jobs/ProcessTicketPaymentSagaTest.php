@@ -13,7 +13,9 @@ use RuntimeException;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
 use Src\Ticketing\Domain\Events\TicketSold;
 use Src\Ticketing\Domain\Model\Ticket;
+use Src\Ticketing\Domain\Ports\PaymentGateway;
 use Src\Ticketing\Domain\Repositories\TicketRepository;
+use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Infrastructure\Jobs\ProcessTicketPayment;
 use Src\Ticketing\Infrastructure\Payment\FakePaymentGateway;
 use Src\Ticketing\Infrastructure\Persistence\EventModel;
@@ -77,7 +79,7 @@ class ProcessTicketPaymentSagaTest extends TestCase
         {
             public string $resId = '';
 
-            public function charge(int $userId, \Src\Ticketing\Domain\ValueObjects\Money $amount): string
+            public function charge(int $userId, Money $amount): string
             {
                 $id = parent::charge($userId, $amount);
                 // Introduce inconsistency: Delete reservation so transactionManager throws exception
@@ -87,7 +89,7 @@ class ProcessTicketPaymentSagaTest extends TestCase
             }
         };
         $gateway->resId = $reservationId;
-        $this->app->instance(\Src\Ticketing\Domain\Ports\PaymentGateway::class, $gateway);
+        $this->app->instance(PaymentGateway::class, $gateway);
 
         $job = new ProcessTicketPayment($reservationId);
         try {
