@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
+use Laravel\Sanctum\Sanctum;
 use Src\Ticketing\Infrastructure\Persistence\EventModel;
 use Src\Ticketing\Infrastructure\Persistence\SeatModel;
 use Tests\TestCase;
@@ -112,7 +113,7 @@ class EventReadTest extends TestCase
     public function test_can_fetch_event_stats(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        \Laravel\Sanctum\Sanctum::actingAs($admin);
+        Sanctum::actingAs($admin);
 
         // 1. Setup
         $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
@@ -152,7 +153,7 @@ class EventReadTest extends TestCase
     public function test_event_stats_requires_admin_role(): void
     {
         $user = User::factory()->create(['role' => 'user']);
-        \Laravel\Sanctum\Sanctum::actingAs($user);
+        Sanctum::actingAs($user);
 
         $event = EventModel::create(['name' => 'Concert', 'total_seats' => 100]);
         $this->getJson("/api/events/{$event->id}/stats")->assertStatus(403);

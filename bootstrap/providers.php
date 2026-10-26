@@ -1,11 +1,19 @@
 <?php
 
+use App\Providers\AppServiceProvider;
+use Src\Reports\Bindings as ReportsBindings;
+use Src\Security\Bindings as SecurityBindings;
+use Src\Shared\Bindings as SharedBindings;
+use Src\Shared\SharedRouteServiceProvider;
+use Src\Ticketing\Bindings as TicketingBindings;
+use Src\Ticketing\TicketingRouteServiceProvider;
+
 return [
-    App\Providers\AppServiceProvider::class,
-    Src\Shared\Bindings::class,
-    Src\Shared\SharedRouteServiceProvider::class,
-    Src\Security\Bindings::class,
-    Src\Reports\Bindings::class,
-    Src\Ticketing\Bindings::class,
-    Src\Ticketing\TicketingRouteServiceProvider::class,
+    AppServiceProvider::class,
+    SharedBindings::class,
+    SharedRouteServiceProvider::class,
+    SecurityBindings::class,
+    ReportsBindings::class,
+    TicketingBindings::class,
+    TicketingRouteServiceProvider::class,
 ];

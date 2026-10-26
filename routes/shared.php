@@ -26,7 +26,7 @@ Route::get('/readiness', function (): JsonResponse {
     try {
         DB::connection()->getPdo();
         $checks['database'] = 'up';
-    } catch (\Throwable) {
+    } catch (Throwable) {
         $checks['database'] = 'down';
         $status = 'degraded';
     }
@@ -34,7 +34,7 @@ Route::get('/readiness', function (): JsonResponse {
     try {
         Cache::store()->get('health_check');
         $checks['cache'] = 'up';
-    } catch (\Throwable) {
+    } catch (Throwable) {
         $checks['cache'] = 'down';
         $status = 'degraded';
     }

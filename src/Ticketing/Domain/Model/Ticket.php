@@ -6,6 +6,7 @@ namespace Src\Ticketing\Domain\Model;
 
 use DateTimeImmutable;
 use Src\Shared\Domain\AggregateRoot;
+use Src\Ticketing\Domain\Events\TicketSold;
 use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Domain\ValueObjects\SeatId;
 
@@ -39,7 +40,7 @@ class Ticket extends AggregateRoot
             new DateTimeImmutable
         );
 
-        $ticket->record(new \Src\Ticketing\Domain\Events\TicketSold($eventId, $seatId, $userId));
+        $ticket->record(new TicketSold($eventId, $seatId, $userId));
 
         return $ticket;
     }

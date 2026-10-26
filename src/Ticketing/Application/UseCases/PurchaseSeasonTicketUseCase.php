@@ -13,6 +13,7 @@ use Src\Ticketing\Application\Ports\IdempotencyStore;
 use Src\Ticketing\Application\Ports\StockManager;
 use Src\Ticketing\Application\Ports\TransactionManager;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
+use Src\Ticketing\Domain\Exceptions\DuplicateRequestException;
 use Src\Ticketing\Domain\Exceptions\EventSoldOutException;
 use Src\Ticketing\Domain\Exceptions\SeatAlreadySoldException;
 use Src\Ticketing\Domain\Model\SeasonTicket;
@@ -46,7 +47,7 @@ class PurchaseSeasonTicketUseCase
                     return $existing;
                 }
             }
-            throw new \Src\Ticketing\Domain\Exceptions\DuplicateRequestException('This request has already been processed.');
+            throw new DuplicateRequestException('This request has already been processed.');
         }
 
         $reservedStockEventIds = [];

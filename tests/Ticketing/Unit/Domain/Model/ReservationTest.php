@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
 use Src\Ticketing\Domain\Exceptions\InvalidStateException;
+use Src\Ticketing\Domain\Exceptions\ReservationAlreadyPaidException;
 use Src\Ticketing\Domain\Model\Reservation;
 use Src\Ticketing\Domain\ValueObjects\Money;
 use Src\Ticketing\Domain\ValueObjects\SeatId;
@@ -58,7 +59,7 @@ class ReservationTest extends TestCase
         $reservation = $this->createReservation();
         $reservation->markAsPaid();
 
-        $this->expectException(\Src\Ticketing\Domain\Exceptions\ReservationAlreadyPaidException::class);
+        $this->expectException(ReservationAlreadyPaidException::class);
         $this->expectExceptionMessage('Cannot pay for a reservation that is already paid.');
 
         $reservation->markAsPaid();

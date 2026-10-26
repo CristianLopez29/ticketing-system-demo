@@ -6,6 +6,7 @@ namespace Tests\Ticketing\Integration\Jobs;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Redis;
 use Src\Ticketing\Domain\Enums\ReservationStatus;
@@ -43,7 +44,7 @@ class ProcessTicketPaymentTest extends TestCase
         ]);
 
         $reservationId = 'res-123';
-        \Illuminate\Support\Facades\DB::table('reservations')->insert([
+        DB::table('reservations')->insert([
             'id' => $reservationId,
             'event_id' => $event->id,
             'seat_id' => $seat->id,

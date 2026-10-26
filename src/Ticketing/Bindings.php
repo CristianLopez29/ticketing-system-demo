@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Src\Ticketing;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Psr\Clock\ClockInterface;
@@ -76,12 +77,12 @@ class Bindings extends ServiceProvider
         $this->app->bind(GetEventStatsQueryHandler::class, LaravelGetEventStatsQueryHandler::class);
         $this->app->bind(PendingRefundRepository::class, EloquentPendingRefundRepository::class);
 
-        $this->app->bind(\Psr\Clock\ClockInterface::class, function () {
-            return new class implements \Psr\Clock\ClockInterface
+        $this->app->bind(ClockInterface::class, function () {
+            return new class implements ClockInterface
             {
                 public function now(): \DateTimeImmutable
                 {
-                    return \Carbon\CarbonImmutable::now();
+                    return CarbonImmutable::now();
                 }
             };
         });

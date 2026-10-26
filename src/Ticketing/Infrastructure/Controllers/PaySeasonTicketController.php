@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Src\Ticketing\Infrastructure\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Src\Ticketing\Application\UseCases\PaySeasonTicketUseCase;
@@ -63,7 +64,7 @@ class PaySeasonTicketController
      */
     public function __invoke(Request $request, string $id): JsonResponse
     {
-        /** @var \App\Models\User $authUser */
+        /** @var User $authUser */
         $authUser = $request->user();
         $userId = (int) $authUser->id;
 
