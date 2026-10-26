@@ -10,7 +10,9 @@ COPY . .
 RUN composer dump-autoload --no-dev --optimize --classmap-authoritative
 
 
-FROM php:8.4-fpm-alpine AS runtime
+# Pinned to the patch level: a floating tag lets the build cache keep serving a base that
+# predates a security release (8.4.27 fixes CVE-2026-109618 and CVE-2026-109619).
+FROM php:8.4.27-fpm-alpine AS runtime
 
 RUN apk add --no-cache $PHPIZE_DEPS linux-headers icu-dev oniguruma-dev     && docker-php-ext-install -j"$(nproc)" bcmath pdo_mysql opcache     && pecl install redis     && docker-php-ext-enable redis     && apk del $PHPIZE_DEPS     && rm -rf /tmp/pear
 
